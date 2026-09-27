@@ -1,69 +1,111 @@
 import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+const heroPins = [
+  { src: "/pins/pin-table.png", alt: "Dinner table at an evening event" },
+  { src: "/pins/pin-dance.png", alt: "Dance floor at a night party" },
+  { src: "/pins/pin-outdoor.png", alt: "Outdoor gathering under pine trees" },
+] as const;
+
+const galleryPins = [
+  { src: "/pins/pin-toast.png", alt: "Guests raising glasses", width: 768, height: 1024 },
+  { src: "/pins/pin-crowd.png", alt: "Crowd at a small indoor show", width: 768, height: 1024 },
+  { src: "/pins/pin-yard.png", alt: "Backyard party at dusk", width: 768, height: 1024 },
+  { src: "/pins/pin-flowers.png", alt: "Floral arrangement at an entrance", width: 768, height: 1024 },
+] as const;
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <>
+      <section className="mx-auto grid min-h-[calc(100dvh-4rem)] w-full max-w-[1280px] grid-cols-1 items-center gap-10 px-6 pb-16 pt-16 md:grid-cols-2 md:pt-24">
+        <div>
+          <h1 className="display text-balance text-ink">Photos from the room, in one album.</h1>
+          <p className="mt-4 max-w-[65ch] text-base leading-[1.4] text-mute">
+            Guests scan a QR and add photos. No guest accounts.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/signup" className="btn-primary">
+              Sign up
+            </Link>
+            <Link href="/login" className="btn-secondary">
+              Log in
+            </Link>
+          </div>
+        </div>
+        <div className="grid h-[min(68dvh,560px)] grid-cols-2 gap-2">
+          <div className="pin relative h-full">
+            <Image
+              src={heroPins[0].src}
+              alt={heroPins[0].alt}
+              fill
+              className="object-cover"
+              sizes="40vw"
+              priority
+            />
+          </div>
+          <div className="grid h-full grid-rows-2 gap-2">
+            {heroPins.slice(1).map((pin) => (
+              <div key={pin.src} className="pin relative h-full">
+                <Image src={pin.src} alt={pin.alt} fill className="object-cover" sizes="20vw" priority />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto grid w-full max-w-[1280px] grid-cols-1 px-6 py-16 md:grid-cols-3 md:divide-x md:divide-hairline">
+        <div className="border-t border-hairline py-8 md:border-t-0 md:px-8 md:py-0 md:first:pl-0">
+          <h2 className="text-[22px] font-semibold text-ink">Create</h2>
+          <p className="mt-2 max-w-[65ch] text-base leading-[1.4] text-mute">
+            Name the event. Ladybug makes a guest album.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="border-t border-hairline py-8 md:border-t-0 md:px-8 md:py-0">
+          <h2 className="text-[22px] font-semibold text-ink">Share</h2>
+          <p className="mt-2 max-w-[65ch] text-base leading-[1.4] text-mute">
+            Print the QR. Guests open it on their phone.
+          </p>
         </div>
-      </main>
-    </div>
+        <div className="border-t border-hairline py-8 md:border-t-0 md:px-8 md:py-0 md:last:pr-0">
+          <h2 className="text-[22px] font-semibold text-ink">Collect</h2>
+          <p className="mt-2 max-w-[65ch] text-base leading-[1.4] text-mute">
+            Every photo lands in one album.
+          </p>
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-[1280px] px-6 py-16">
+        <div className="pin-grid">
+          {galleryPins.map((pin) => (
+            <div key={pin.src} className="pin">
+              <Image src={pin.src} alt={pin.alt} width={pin.width} height={pin.height} className="h-auto w-full" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-charcoal px-8 py-12 text-canvas">
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col items-start gap-6">
+          <h2 className="heading-xl text-canvas">Make the album for your next room.</h2>
+          <Link href="/signup" className="btn-primary">
+            Sign up
+          </Link>
+        </div>
+      </section>
+
+      <footer className="flex flex-wrap items-center justify-between gap-4 px-6 py-8">
+        <Link href="/" className="text-[22px] font-semibold text-primary">
+          Ladybug
+        </Link>
+        <nav className="flex items-center gap-3">
+          <Link href="/login" className="btn-tertiary">
+            Log in
+          </Link>
+          <Link href="/signup" className="btn-primary">
+            Sign up
+          </Link>
+        </nav>
+      </footer>
+    </>
   );
 }
