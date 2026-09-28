@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { signUpAction } from "../services/auth.service";
+import { signUpAction } from "../services/auth.actions";
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState(signUpAction, null);
@@ -19,6 +19,7 @@ export function SignupForm() {
           type="password"
           required
           minLength={8}
+          maxLength={128}
           autoComplete="new-password"
           className="field"
         />

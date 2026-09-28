@@ -3,15 +3,17 @@ import {
   SESSION_COOKIE,
   signSessionToken,
   verifySessionToken,
-} from "@/shared/session-token";
+} from "@/server/session-token";
 
-export async function createSession(userId: string) {
-  const token = await signSessionToken(userId);
+export async function createSession(userId: string, tokenVersion = 0) {
+  const token = await signSessionToken(userId, tokenVersion);
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure:
+      process.env.SESSION_COOKIE_SECURE === "true" ||
+      (process.env.NODE_ENV === "production" && process.env.SESSION_COOKIE_SECURE !== "false"),
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });

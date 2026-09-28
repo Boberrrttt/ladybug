@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getHost } from "@/features/auth/services/auth.service";
@@ -24,10 +23,13 @@ export default async function HostEventPage({
     notFound();
   }
 
-  const headerStore = await headers();
-  const hostName = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "localhost:3000";
-  const protocol = headerStore.get("x-forwarded-proto") ?? "http";
-  const guestUrl = `${protocol}://${hostName}/event/${event.guestSlug}`;
+  const origin =
+    process.env.APP_ORIGIN?.replace(/\/$/, "") ??
+    (process.env.NODE_ENV !== "production" ? "http://localhost:3000" : "");
+  if (!origin) {
+    throw new Error("APP_ORIGIN is not set");
+  }
+  const guestUrl = `${origin}/event/${event.guestSlug}`;
   const [qrDataUrl, photos] = await Promise.all([toDataUrl(guestUrl), listPhotos(event.id)]);
 
   return (

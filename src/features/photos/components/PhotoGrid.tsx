@@ -1,5 +1,5 @@
 import type { Photo } from "@/shared/types";
-import { deletePhotoAction } from "../services/photos.service";
+import { deletePhotoAction } from "../services/photos.actions";
 
 export function PhotoGrid({ photos, canDelete = false }: { photos: Photo[]; canDelete?: boolean }) {
   if (photos.length === 0) {
@@ -22,7 +22,8 @@ export function PhotoGrid({ photos, canDelete = false }: { photos: Photo[]; canD
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={photo.url} alt="Event photo" />
           {canDelete ? (
-            <form action={deletePhotoAction.bind(null, photo.id)} className="absolute bottom-2 right-2">
+            <form action={deletePhotoAction} className="absolute bottom-2 right-2">
+              <input type="hidden" name="photoId" value={photo.id} />
               <button type="submit" className="btn-pill">
                 Delete
               </button>

@@ -1,14 +1,12 @@
-"use server";
+import "server-only";
 
 import { ObjectId, type WithId } from "mongodb";
-import { revalidatePath } from "next/cache";
-import { getHost } from "@/features/auth/services/auth.service";
-import { getEventByGuestSlug, getHostEvent } from "@/features/events/services/events.service";
+import { getHostEvent } from "@/features/events/services/events.service";
 import { ensureIndexes, getCollection } from "@/server/db";
-import { deleteImageKitFile, uploadImageKitFile } from "@/server/imagekit";
+import { deleteImageKitFile } from "@/server/imagekit";
 import { PhotoSource } from "@/shared/enums";
 import type { Photo } from "@/shared/types";
-import { isImageFile, isImageKitUrl } from "../helpers/photos.helpers";
+import { isImageKitUrl } from "../helpers/photos.helpers";
 
 type PhotoDoc = {
   eventId: ObjectId;
@@ -66,6 +64,14 @@ export async function savePhoto(input: {
   });
 }
 
+export async function countPhotos(eventId: string) {
+  if (!ObjectId.isValid(eventId)) {
+    return 0;
+  }
+  await ensureIndexes();
+  return photos().countDocuments({ eventId: new ObjectId(eventId) });
+}
+
 export async function listPhotos(eventId: string) {
   if (!ObjectId.isValid(eventId)) {
     return [];
@@ -94,51 +100,4 @@ export async function deletePhoto(hostId: string, photoId: string) {
   await deleteImageKitFile(photo.fileId);
   await photos().deleteOne({ _id: photo._id });
   return event;
-}
-
-export async function uploadPhotoAction(formData: FormData) {
-  const file = formData.get("file");
-  const guestSlug = String(formData.get("guestSlug") ?? "");
-  const eventId = String(formData.get("eventId") ?? "");
-  if (!(file instanceof File) || !isImageFile(file)) {
-    throw new Error("Images only, max 15MB");
-  }
-
-  let event = null;
-  let source = PhotoSource.GUEST;
-  if (guestSlug) {
-    event = await getEventByGuestSlug(guestSlug);
-  } else if (eventId) {
-    const host = await getHost();
-    if (!host) {
-      throw new Error("Unauthorized");
-    }
-    event = await getHostEvent(host.id, eventId);
-    source = PhotoSource.HOST;
-  }
-  if (!event) {
-    throw new Error("Event not found");
-  }
-
-  const uploaded = await uploadImageKitFile(file);
-  const photo = await savePhoto({
-    eventId: event.id,
-    url: uploaded.url,
-    fileId: uploaded.fileId,
-    filePath: uploaded.filePath,
-    source,
-  });
-  revalidatePath(`/event/${event.guestSlug}`);
-  revalidatePath(`/events/${event.id}`);
-  return photo;
-}
-
-export async function deletePhotoAction(photoId: string) {
-  const host = await getHost();
-  if (!host) {
-    throw new Error("Unauthorized");
-  }
-  const event = await deletePhoto(host.id, photoId);
-  revalidatePath(`/events/${event.id}`);
-  revalidatePath(`/event/${event.guestSlug}`);
 }

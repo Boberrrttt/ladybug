@@ -1,11 +1,9 @@
-"use server";
+import "server-only";
 
 import { ObjectId, type WithId } from "mongodb";
-import { redirect } from "next/navigation";
-import { getHost } from "@/features/auth/services/auth.service";
 import { ensureIndexes, getCollection } from "@/server/db";
 import type { Event } from "@/shared/types";
-import { createGuestSlug, normalizeEventName } from "../helpers/events.helpers";
+import { createGuestSlug, isGuestSlug, normalizeEventName } from "../helpers/events.helpers";
 
 type EventDoc = {
   hostId: ObjectId;
@@ -79,24 +77,10 @@ export async function getHostEvent(hostId: string, eventId: string) {
 }
 
 export async function getEventByGuestSlug(guestSlug: string) {
-  if (!guestSlug) {
+  if (typeof guestSlug !== "string" || !isGuestSlug(guestSlug)) {
     return null;
   }
   await ensureIndexes();
   const doc = await events().findOne({ guestSlug });
   return doc ? serializeEvent(doc) : null;
-}
-
-export async function createEventAction(_previous: { error: string } | null, formData: FormData) {
-  const host = await getHost();
-  if (!host) {
-    redirect("/login");
-  }
-  let event;
-  try {
-    event = await createEvent(host.id, String(formData.get("name") ?? ""));
-  } catch (caughtError) {
-    return { error: caughtError instanceof Error ? caughtError.message : "Could not create event" };
-  }
-  redirect(`/events/${event.id}`);
 }

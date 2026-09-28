@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { logInAction } from "../services/auth.service";
+import { logInAction } from "../services/auth.actions";
 
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(logInAction, null);
@@ -18,6 +18,7 @@ export function LoginForm() {
           name="password"
           type="password"
           required
+          maxLength={128}
           autoComplete="current-password"
           className="field"
         />

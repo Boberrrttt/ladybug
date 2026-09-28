@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getHost } from "@/features/auth/services/auth.service";
 
 const heroPins = [
   { src: "/pins/pin-table.png", alt: "Dinner table at an evening event" },
@@ -14,23 +15,27 @@ const galleryPins = [
   { src: "/pins/pin-flowers.png", alt: "Floral arrangement at an entrance", width: 768, height: 1024 },
 ] as const;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const host = await getHost();
+
   return (
     <>
-      <section className="mx-auto grid min-h-[calc(100dvh-4rem)] w-full max-w-[1280px] grid-cols-1 items-center gap-10 px-6 pb-16 pt-16 md:grid-cols-2 md:pt-24">
+      <section className="mx-auto grid min-h-[calc(100dvh-5rem)] w-full max-w-[1280px] grid-cols-1 items-center gap-10 px-6 pb-16 pt-8 md:grid-cols-2 md:pt-12">
         <div>
           <h1 className="display text-balance text-ink">Photos from the room, in one album.</h1>
           <p className="mt-4 max-w-[65ch] text-base leading-[1.4] text-mute">
             Guests scan a QR and add photos. No guest accounts.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/signup" className="btn-primary">
-              Sign up
-            </Link>
-            <Link href="/login" className="btn-secondary">
-              Log in
-            </Link>
-          </div>
+          {host ? null : (
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/signup" className="btn-primary">
+                Sign up
+              </Link>
+              <Link href="/login" className="btn-secondary">
+                Log in
+              </Link>
+            </div>
+          )}
         </div>
         <div className="grid h-[min(68dvh,560px)] grid-cols-2 gap-2">
           <div className="pin relative h-full">
@@ -87,9 +92,11 @@ export default function HomePage() {
       <section className="bg-charcoal px-8 py-12 text-canvas">
         <div className="mx-auto flex w-full max-w-[1280px] flex-col items-start gap-6">
           <h2 className="heading-xl text-canvas">Make the album for your next room.</h2>
-          <Link href="/signup" className="btn-primary">
-            Sign up
-          </Link>
+          {host ? null : (
+            <Link href="/signup" className="btn-primary">
+              Sign up
+            </Link>
+          )}
         </div>
       </section>
 
@@ -97,14 +104,16 @@ export default function HomePage() {
         <Link href="/" className="text-[22px] font-semibold text-primary">
           Ladybug
         </Link>
-        <nav className="flex items-center gap-3">
-          <Link href="/login" className="btn-tertiary">
-            Log in
-          </Link>
-          <Link href="/signup" className="btn-primary">
-            Sign up
-          </Link>
-        </nav>
+        {host ? null : (
+          <nav className="flex items-center gap-3">
+            <Link href="/login" className="btn-tertiary">
+              Log in
+            </Link>
+            <Link href="/signup" className="btn-primary">
+              Sign up
+            </Link>
+          </nav>
+        )}
       </footer>
     </>
   );

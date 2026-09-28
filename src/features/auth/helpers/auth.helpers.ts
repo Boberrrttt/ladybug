@@ -7,8 +7,17 @@ export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+export const MIN_PASSWORD_LENGTH = 8;
+export const MAX_PASSWORD_LENGTH = 128;
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function isValidEmail(email: string) {
-  return email.includes("@") && email.includes(".");
+  return email.length <= 254 && EMAIL_PATTERN.test(email);
+}
+
+export function isValidPassword(password: string) {
+  return password.length >= MIN_PASSWORD_LENGTH && password.length <= MAX_PASSWORD_LENGTH;
 }
 
 export async function hashPassword(password: string) {

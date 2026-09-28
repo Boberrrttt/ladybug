@@ -4,6 +4,7 @@ export type User = {
   id: string;
   email: string;
   createdAt: string;
+  tokenVersion: number;
 };
 
 export type Event = {

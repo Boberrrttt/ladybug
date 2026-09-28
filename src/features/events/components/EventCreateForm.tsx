@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createEventAction } from "../services/events.service";
+import { createEventAction } from "../services/events.actions";
 
 export function EventCreateForm() {
   const [state, formAction, pending] = useActionState(createEventAction, null);

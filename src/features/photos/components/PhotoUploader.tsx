@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type ChangeEvent } from "react";
 import { isImageFile, MAX_PHOTO_BYTES } from "../helpers/photos.helpers";
-import { uploadPhotoAction } from "../services/photos.service";
+import { uploadPhotoAction } from "../services/photos.actions";
 
 type PhotoUploaderProps = {
   guestSlug?: string;
@@ -59,7 +59,7 @@ export function PhotoUploader({ guestSlug, eventId }: PhotoUploaderProps) {
         {pending ? "Adding…" : "Add photos"}
         <input
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           multiple
           disabled={pending}
           onChange={handleChange}
