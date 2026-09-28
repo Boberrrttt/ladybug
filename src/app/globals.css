@@ -379,6 +379,16 @@ body {
   }
 }
 
+.pin-grid-2 {
+  column-count: 1;
+}
+
+@media (min-width: 768px) {
+  .pin-grid-2 {
+    column-count: 2;
+  }
+}
+
 .pin {
   break-inside: avoid;
   overflow: hidden;

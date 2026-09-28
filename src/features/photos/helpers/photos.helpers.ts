@@ -32,6 +32,10 @@ export async function hasAllowedImageMagic(file: File) {
   );
 }
 
+export function formatPhotoCount(count: number) {
+  return count === 1 ? "1 photo" : `${count} photos`;
+}
+
 export function isImageKitUrl(url: string, endpoint = process.env.IMAGEKIT_URL_ENDPOINT) {
   try {
     const parsed = new URL(url);
