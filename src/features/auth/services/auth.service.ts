@@ -3,11 +3,13 @@ import "server-only";
 import { ObjectId, type WithId } from "mongodb";
 import { ensureIndexes, getCollection } from "@/server/db";
 import { readSession } from "@/server/session";
+import { verifySessionToken, type SessionPayload } from "@/server/session-token";
 import type { User } from "@/shared/types";
 import {
   hashPassword,
   isValidEmail,
   isValidPassword,
+  MAX_PASSWORD_LENGTH,
   normalizeEmail,
   verifyPassword,
 } from "../helpers/auth.helpers";
@@ -35,7 +37,7 @@ function serializeUser(doc: WithId<UserDoc>): User {
 export async function signUp(email: string, password: string) {
   const normalized = normalizeEmail(email);
   if (!isValidEmail(normalized) || !isValidPassword(password)) {
-    throw new Error("Use a valid email and a password of 8–128 characters");
+    throw new Error("Use a valid email and a password of 12–128 characters");
   }
   await ensureIndexes();
   const existing = await users().findOne({ email: normalized });
@@ -59,7 +61,7 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function logIn(email: string, password: string) {
-  if (!isValidPassword(password)) {
+  if (password.length < 1 || password.length > MAX_PASSWORD_LENGTH) {
     throw new Error("Invalid email or password");
   }
   const normalized = normalizeEmail(email);
@@ -71,8 +73,15 @@ export async function logIn(email: string, password: string) {
   return serializeUser(doc);
 }
 
+export async function getHostFromSessionToken(token: string) {
+  return hostFromSession(await verifySessionToken(token));
+}
+
 export async function getHost() {
-  const session = await readSession();
+  return hostFromSession(await readSession());
+}
+
+async function hostFromSession(session: SessionPayload | null) {
   if (!session || !ObjectId.isValid(session.userId)) {
     return null;
   }

@@ -13,8 +13,9 @@ test("isValidEmail requires a local part, at-sign, and a dotted host", () => {
   assert.equal(isValidEmail(`${"x".repeat(250)}@e.co`), false);
 });
 
-test("isValidPassword enforces 8–128 characters", () => {
+test("isValidPassword enforces 12–128 characters", () => {
   assert.equal(isValidPassword("short"), false);
+  assert.equal(isValidPassword("elevenchars"), false);
   assert.equal(isValidPassword("correct-horse"), true);
   assert.equal(isValidPassword("x".repeat(128)), true);
   assert.equal(isValidPassword("x".repeat(129)), false);

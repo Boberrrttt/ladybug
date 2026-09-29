@@ -18,7 +18,7 @@ export function SignupForm() {
           name="password"
           type="password"
           required
-          minLength={8}
+          minLength={12}
           maxLength={128}
           autoComplete="new-password"
           className="field"

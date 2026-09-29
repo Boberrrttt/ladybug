@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/server/session-token";
+import { getHostFromSessionToken } from "@/features/auth/services/auth.service";
+import { SESSION_COOKIE } from "@/server/session-token";
 
 function contentSecurityPolicy(nonce: string) {
   const imageKitOrigin = (() => {
@@ -15,13 +16,16 @@ function contentSecurityPolicy(nonce: string) {
     }
   })();
   const scriptEval = process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'";
+  const connectSrc =
+    process.env.NODE_ENV === "production" ? "connect-src 'self'" : "connect-src 'self' ws: wss:";
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${scriptEval}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob: https://ik.imagekit.io https://*.imagekit.io${imageKitOrigin}`,
+    `media-src 'self' blob: https://ik.imagekit.io https://*.imagekit.io${imageKitOrigin}`,
     "font-src 'self'",
-    "connect-src 'self' ws: wss:",
+    connectSrc,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -38,7 +42,7 @@ export async function proxy(request: NextRequest) {
   let response: NextResponse;
   if (request.nextUrl.pathname.startsWith("/events")) {
     const token = request.cookies.get(SESSION_COOKIE)?.value;
-    if (!token || !(await verifySessionToken(token))) {
+    if (!token || !(await getHostFromSessionToken(token))) {
       response = NextResponse.redirect(new URL("/login", request.url));
       response.headers.set("Content-Security-Policy", csp);
       return response;

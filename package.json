@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3004",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3004",
     "lint": "eslint",
     "test": "node --experimental-strip-types --test src/features/auth/helpers/auth.helpers.test.ts src/features/events/helpers/events.helpers.test.ts src/features/photos/helpers/photos.helpers.test.ts src/server/rate-limit.test.ts src/shared/helpers/request.helpers.test.ts"
   },

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getEventByGuestSlug } from "@/features/events/services/events.service";
-import { PhotoGrid } from "@/features/photos/components/PhotoGrid";
-import { PhotoUploader } from "@/features/photos/components/PhotoUploader";
+import { PhotoAlbum } from "@/features/photos/components/PhotoAlbum";
+import { formatPhotoCount } from "@/features/photos/helpers/photos.helpers";
 import { listPhotos } from "@/features/photos/services/photos.service";
 
 type GuestAlbumPageProps = {
@@ -28,8 +28,11 @@ export default async function GuestAlbumPage({ params }: GuestAlbumPageProps) {
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 px-6 py-12">
       <h1 className="heading-xl text-ink">{event.name}</h1>
-      <PhotoUploader guestSlug={event.guestSlug} />
-      <PhotoGrid photos={photos} />
+      <PhotoAlbum
+        guestSlug={event.guestSlug}
+        heading={formatPhotoCount(photos.length)}
+        photos={photos}
+      />
     </main>
   );
 }

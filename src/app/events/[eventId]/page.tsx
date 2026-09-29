@@ -4,8 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getHost } from "@/features/auth/services/auth.service";
 import { EventQrCard } from "@/features/events/components/EventQrCard";
 import { getHostEvent } from "@/features/events/services/events.service";
-import { PhotoGrid } from "@/features/photos/components/PhotoGrid";
-import { PhotoUploader } from "@/features/photos/components/PhotoUploader";
+import { PhotoAlbum } from "@/features/photos/components/PhotoAlbum";
 import { formatPhotoCount } from "@/features/photos/helpers/photos.helpers";
 import { listPhotos } from "@/features/photos/services/photos.service";
 import { toDataUrl } from "@/features/qr/helpers/qr.helpers";
@@ -27,12 +26,15 @@ export default async function HostEventPage({
 
   const origin =
     process.env.APP_ORIGIN?.replace(/\/$/, "") ??
-    (process.env.NODE_ENV !== "production" ? "http://localhost:3000" : "");
+    (process.env.NODE_ENV !== "production" ? "http://localhost:3004" : "");
   if (!origin) {
     throw new Error("APP_ORIGIN is not set");
   }
   const guestUrl = `${origin}/event/${event.guestSlug}`;
-  const [qrDataUrl, photos] = await Promise.all([toDataUrl(guestUrl), listPhotos(event.id)]);
+  const [qrDataUrl, photos] = await Promise.all([
+    toDataUrl(guestUrl),
+    listPhotos(event.id, { purgeExpiredDeletes: true }),
+  ]);
 
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 px-6 pb-16 pt-8">
@@ -48,8 +50,7 @@ export default async function HostEventPage({
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[16rem_1fr]">
         <EventQrCard qrDataUrl={qrDataUrl} guestUrl={guestUrl} />
         <section className="flex min-w-0 flex-col gap-4">
-          <PhotoUploader eventId={event.id} heading={formatPhotoCount(photos.length)} />
-          <PhotoGrid photos={photos} canDelete />
+          <PhotoAlbum eventId={event.id} heading={formatPhotoCount(photos.length)} photos={photos} canDelete />
         </section>
       </div>
     </main>

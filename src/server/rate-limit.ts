@@ -1,3 +1,4 @@
+import { MongoServerError } from "mongodb";
 import { ensureIndexes, getCollection } from "@/server/db";
 import { clientIpFromHeaders } from "@/shared/helpers/request.helpers";
 import { assertRateLimit } from "./helpers/rate-limit.helpers";
@@ -10,29 +11,53 @@ type RateLimitDoc = {
   resetAt: Date;
 };
 
+function isDuplicateKey(caughtError: unknown) {
+  return caughtError instanceof MongoServerError && caughtError.code === 11000;
+}
+
 async function assertSharedRateLimit(key: string, limit: number, windowMs: number) {
   if (!process.env.MONGODB_URI) {
     assertRateLimit(key, limit, windowMs);
     return;
   }
   await ensureIndexes();
-  const now = Date.now();
+  const now = new Date();
+  const windowEnd = new Date(now.getTime() + windowMs);
   const collection = getCollection<RateLimitDoc>("rateLimits");
-  const existing = await collection.findOne({ _id: key });
-  if (!existing || now >= existing.resetAt.getTime()) {
-    await collection.updateOne(
-      { _id: key },
-      { $set: { count: 1, resetAt: new Date(now + windowMs) } },
-      { upsert: true },
-    );
-    return;
-  }
-  const updated = await collection.findOneAndUpdate(
-    { _id: key, count: { $lt: limit }, resetAt: { $gt: new Date(now) } },
+
+  const incremented = await collection.findOneAndUpdate(
+    { _id: key, count: { $lt: limit }, resetAt: { $gt: now } },
     { $inc: { count: 1 } },
     { returnDocument: "after" },
   );
-  if (!updated) {
+  if (incremented) {
+    return;
+  }
+
+  const reset = await collection.findOneAndUpdate(
+    { _id: key, resetAt: { $lte: now } },
+    { $set: { count: 1, resetAt: windowEnd } },
+    { returnDocument: "after" },
+  );
+  if (reset) {
+    return;
+  }
+
+  try {
+    await collection.insertOne({ _id: key, count: 1, resetAt: windowEnd });
+    return;
+  } catch (caughtError) {
+    if (!isDuplicateKey(caughtError)) {
+      throw caughtError;
+    }
+  }
+
+  const retry = await collection.findOneAndUpdate(
+    { _id: key, count: { $lt: limit }, resetAt: { $gt: now } },
+    { $inc: { count: 1 } },
+    { returnDocument: "after" },
+  );
+  if (!retry) {
     throw new Error("Too many requests. Try again later.");
   }
 }
@@ -55,4 +80,12 @@ export async function assertGuestUploadRateLimit(guestSlug: string) {
 
 export async function assertHostUploadRateLimit(hostId: string) {
   await assertSharedRateLimit(`upload:host:${hostId}`, 60, 60 * 1000);
+}
+
+export async function assertHostMutationRateLimit(hostId: string) {
+  await assertSharedRateLimit(`mutate:host:${hostId}`, 60, 60 * 1000);
+}
+
+export async function assertEventCreateRateLimit(hostId: string) {
+  await assertSharedRateLimit(`event-create:${hostId}`, 10, 15 * 60 * 1000);
 }

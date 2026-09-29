@@ -2,17 +2,25 @@
 
 import { Plus } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
-import { useState, type ChangeEvent } from "react";
-import { isImageFile, MAX_PHOTO_BYTES } from "../helpers/photos.helpers";
+import { useState, type ChangeEvent, type ReactNode } from "react";
+import { isAllowedMediaFile, rejectMediaReason } from "../helpers/photos.helpers";
 import { uploadPhotoAction } from "../services/photos.actions";
 
 type PhotoUploaderProps = {
   guestSlug?: string;
   eventId?: string;
   heading?: string;
+  onUploadingChange?: (count: number) => void;
+  actions?: ReactNode;
 };
 
-export function PhotoUploader({ guestSlug, eventId, heading }: PhotoUploaderProps) {
+export function PhotoUploader({
+  guestSlug,
+  eventId,
+  heading,
+  onUploadingChange,
+  actions,
+}: PhotoUploaderProps) {
   const router = useRouter();
   const [status, setStatus] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -25,17 +33,19 @@ export function PhotoUploader({ guestSlug, eventId, heading }: PhotoUploaderProp
       return;
     }
 
-    const rejected = files.filter((file) => !isImageFile(file));
-    const accepted = files.filter(isImageFile);
+    const rejected = files.filter((file) => !isAllowedMediaFile(file));
+    const accepted = files.filter(isAllowedMediaFile);
     if (rejected.length > 0) {
       setIsError(true);
-      setStatus(`Skipped ${rejected.length} file(s). Images only, max ${MAX_PHOTO_BYTES / 1024 / 1024}MB.`);
+      setStatus(rejectMediaReason(rejected[0]!) ?? "Unsupported file type.");
     }
     if (accepted.length === 0) {
       return;
     }
 
     setPending(true);
+    let remaining = accepted.length;
+    onUploadingChange?.(remaining);
     try {
       for (const file of accepted) {
         const formData = new FormData();
@@ -47,34 +57,42 @@ export function PhotoUploader({ guestSlug, eventId, heading }: PhotoUploaderProp
           formData.set("eventId", eventId);
         }
         await uploadPhotoAction(formData);
+        remaining -= 1;
+        onUploadingChange?.(remaining);
       }
       setIsError(false);
-      setStatus(`Added ${accepted.length} photo${accepted.length === 1 ? "" : "s"}.`);
+      setStatus(`Added ${accepted.length} item${accepted.length === 1 ? "" : "s"}.`);
       router.refresh();
     } catch (caughtError) {
       setIsError(true);
       setStatus(caughtError instanceof Error ? caughtError.message : "Upload failed");
     } finally {
       setPending(false);
+      onUploadingChange?.(0);
     }
   }
 
   return (
     <div className="flex flex-col gap-1">
-      <div className={`flex items-center gap-3 ${heading ? "justify-between" : ""}`}>
+      <div className={`flex flex-wrap items-center gap-3 ${heading ? "justify-between" : ""}`}>
         {heading ? <h2 className="text-[22px] font-semibold text-ink">{heading}</h2> : null}
-        <label className={`btn-secondary w-fit cursor-pointer gap-2 ${pending ? "pointer-events-none opacity-60" : ""}`}>
-          <Plus size={16} weight="bold" aria-hidden="true" />
-          {pending ? "Adding…" : "Add photos"}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            multiple
-            disabled={pending}
-            onChange={handleChange}
-            className="sr-only"
-          />
-        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          {actions}
+          <label
+            className={`btn-secondary w-fit cursor-pointer gap-2 ${pending ? "pointer-events-none opacity-60" : ""}`}
+          >
+            <Plus size={16} weight="bold" aria-hidden="true" />
+            {pending ? "Adding…" : "Add media"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"
+              multiple
+              disabled={pending}
+              onChange={handleChange}
+              className="sr-only"
+            />
+          </label>
+        </div>
       </div>
       {status ? (
         <p className={`text-sm ${isError ? "text-error" : "text-mute"}`} role="status" aria-live="polite">

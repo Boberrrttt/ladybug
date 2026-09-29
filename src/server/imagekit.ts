@@ -1,10 +1,12 @@
 import { randomBytes } from "node:crypto";
 
-const IMAGE_EXTENSIONS: Record<string, string> = {
+const FILE_EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
 };
 
 function imageKitAuthHeader() {
@@ -18,7 +20,7 @@ function imageKitAuthHeader() {
 export async function uploadImageKitFile(file: File) {
   const body = new FormData();
   body.set("file", file);
-  body.set("fileName", `${randomBytes(16).toString("hex")}.${IMAGE_EXTENSIONS[file.type] ?? "bin"}`);
+  body.set("fileName", `${randomBytes(16).toString("hex")}.${FILE_EXTENSIONS[file.type] ?? "bin"}`);
   body.set("folder", "/ladybug");
   body.set("useUniqueFileName", "true");
 

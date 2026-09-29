@@ -1,7 +1,11 @@
 export function clientIpFromHeaders(forwardedFor: string | null, realIp: string | null) {
-  const forwarded = forwardedFor?.split(",").pop()?.trim();
+  const platformIp = realIp?.trim();
+  if (platformIp) {
+    return platformIp;
+  }
+  const forwarded = forwardedFor?.split(",")[0]?.trim();
   if (forwarded) {
     return forwarded;
   }
-  return realIp?.trim() || "unknown";
+  return "unknown";
 }

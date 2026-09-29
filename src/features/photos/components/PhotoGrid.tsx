@@ -1,9 +1,96 @@
-import { Trash } from "@phosphor-icons/react/ssr";
-import Image from "next/image";
-import type { Photo } from "@/shared/types";
-import { deletePhotoAction } from "../services/photos.actions";
+"use client";
 
-export function PhotoGrid({ photos, canDelete = false }: { photos: Photo[]; canDelete?: boolean }) {
+import { Check, Play } from "@phosphor-icons/react";
+import Image from "next/image";
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { MediaKind } from "@/shared/media-kind";
+import type { Photo } from "@/shared/types";
+import { PhotoLightbox } from "./PhotoLightbox";
+
+const SKELETON_RATIOS = ["3 / 4", "4 / 3", "1 / 1"] as const;
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_MOVE_PX = 10;
+
+function gridClassForCount(count: number) {
+  if (count === 1) {
+    return "max-w-xl";
+  }
+  if (count < 4) {
+    return "pin-grid pin-grid-2";
+  }
+  return "pin-grid";
+}
+
+export function PhotoGridSkeleton({ count }: { count: number }) {
+  const pinCount = Math.max(count, 1);
+  return (
+    <ul className={gridClassForCount(pinCount)} aria-busy="true" aria-label="Loading media">
+      {Array.from({ length: pinCount }, (_, index) => (
+        <li
+          key={`grid-skeleton-${index}`}
+          className="pin photo-skeleton"
+          style={{ aspectRatio: SKELETON_RATIOS[index % SKELETON_RATIOS.length] }}
+          aria-hidden="true"
+        />
+      ))}
+    </ul>
+  );
+}
+
+export function PhotoGrid({
+  photos,
+  canSelect = false,
+  selecting = false,
+  selectedIds = [],
+  onToggleSelect,
+  onLongPressSelect,
+}: {
+  photos: Photo[];
+  canSelect?: boolean;
+  selecting?: boolean;
+  selectedIds?: string[];
+  onToggleSelect?: (photoId: string) => void;
+  onLongPressSelect?: (photoId: string) => void;
+}) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const selectedSet = new Set(selectedIds);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressClickRef = useRef(false);
+
+  function clearLongPress() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+    longPressTimerRef.current = null;
+    longPressOriginRef.current = null;
+  }
+
+  function startLongPress(photoId: string, event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!canSelect || selecting || event.button !== 0) {
+      return;
+    }
+    clearLongPress();
+    longPressOriginRef.current = { x: event.clientX, y: event.clientY };
+    longPressTimerRef.current = setTimeout(() => {
+      suppressClickRef.current = true;
+      onLongPressSelect?.(photoId);
+      clearLongPress();
+    }, LONG_PRESS_MS);
+  }
+
+  function moveLongPress(event: ReactPointerEvent<HTMLButtonElement>) {
+    const origin = longPressOriginRef.current;
+    if (!origin) {
+      return;
+    }
+    const deltaX = Math.abs(event.clientX - origin.x);
+    const deltaY = Math.abs(event.clientY - origin.y);
+    if (deltaX > LONG_PRESS_MOVE_PX || deltaY > LONG_PRESS_MOVE_PX) {
+      clearLongPress();
+    }
+  }
+
   if (photos.length === 0) {
     return (
       <div className="flex flex-col gap-5 rounded-md bg-card p-6 sm:flex-row sm:items-center">
@@ -16,29 +103,84 @@ export function PhotoGrid({ photos, canDelete = false }: { photos: Photo[]; canD
             sizes="224px"
           />
         </div>
-        <p className="max-w-[65ch] text-base text-mute">Add the first photo.</p>
+        <p className="max-w-[65ch] text-base text-mute">Add the first photo or video.</p>
       </div>
     );
   }
 
-  const gridClass = photos.length === 1 ? "max-w-xl" : photos.length < 4 ? "pin-grid pin-grid-2" : "pin-grid";
-
   return (
-    <ul className={gridClass}>
-      {photos.map((photo) => (
-        <li key={photo.id} className="pin relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo.url} alt="Event photo" />
-          {canDelete ? (
-            <form action={deletePhotoAction} className="absolute bottom-2 right-2">
-              <input type="hidden" name="photoId" value={photo.id} />
-              <button type="submit" className="btn-pill gap-1" aria-label="Delete photo">
-                <Trash size={16} weight="bold" aria-hidden="true" />
+    <>
+      <ul className={gridClassForCount(photos.length)}>
+        {photos.map((photo, index) => {
+          const isSelected = selectedSet.has(photo.id);
+          return (
+            <li key={photo.id} className={`pin relative ${isSelected ? "pin-selected" : ""}`}>
+              <button
+                type="button"
+                className="photo-open"
+                aria-label={
+                  selecting
+                    ? isSelected
+                      ? "Deselect media"
+                      : "Select media"
+                    : photo.mediaKind === MediaKind.VIDEO
+                      ? "View video"
+                      : "View photo"
+                }
+                aria-pressed={selecting ? isSelected : undefined}
+                onPointerDown={(event) => startLongPress(photo.id, event)}
+                onPointerMove={moveLongPress}
+                onPointerUp={clearLongPress}
+                onPointerCancel={clearLongPress}
+                onPointerLeave={clearLongPress}
+                onContextMenu={(event) => {
+                  if (canSelect) {
+                    event.preventDefault();
+                  }
+                }}
+                onClick={() => {
+                  if (suppressClickRef.current) {
+                    suppressClickRef.current = false;
+                    return;
+                  }
+                  if (selecting) {
+                    onToggleSelect?.(photo.id);
+                    return;
+                  }
+                  setActiveIndex(index);
+                }}
+              >
+                {photo.mediaKind === MediaKind.VIDEO ? (
+                  <>
+                    <video src={photo.url} muted playsInline preload="metadata" />
+                    {!selecting ? (
+                      <span className="photo-play" aria-hidden="true">
+                        <Play size={20} weight="fill" />
+                      </span>
+                    ) : null}
+                  </>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photo.url} alt="Event photo" />
+                )}
+                {selecting ? (
+                  <span className={`photo-check ${isSelected ? "photo-check-on" : ""}`} aria-hidden="true">
+                    {isSelected ? <Check size={14} weight="bold" /> : null}
+                  </span>
+                ) : null}
               </button>
-            </form>
-          ) : null}
-        </li>
-      ))}
-    </ul>
+            </li>
+          );
+        })}
+      </ul>
+      {!selecting && activeIndex !== null ? (
+        <PhotoLightbox
+          photos={photos}
+          activeIndex={activeIndex}
+          onClose={() => setActiveIndex(null)}
+          onNavigate={setActiveIndex}
+        />
+      ) : null}
+    </>
   );
 }
