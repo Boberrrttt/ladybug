@@ -520,18 +520,17 @@ body {
 .event-album-empty {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 1.25rem;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
   border: 1px dashed color-mix(in srgb, var(--color-primary) 28%, var(--color-hairline));
   border-radius: 16px;
   background: color-mix(in srgb, var(--color-card) 70%, transparent);
 }
 
-@media (min-width: 640px) {
-  .event-album-empty {
-    flex-direction: row;
-    align-items: center;
-  }
+.event-album-empty svg {
+  color: var(--color-primary);
 }
 
 .event-brand .pin {

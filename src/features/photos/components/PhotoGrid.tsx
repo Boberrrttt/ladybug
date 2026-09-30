@@ -1,7 +1,6 @@
 "use client";
 
-import { Check, Play } from "@phosphor-icons/react";
-import Image from "next/image";
+import { Check, Images, Play } from "@phosphor-icons/react";
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { MediaKind } from "@/shared/media-kind";
 import type { Photo } from "@/shared/types";
@@ -94,15 +93,7 @@ export function PhotoGrid({
   if (photos.length === 0) {
     return (
       <div className="event-album-empty">
-        <div className="pin relative aspect-[4/3] w-full shrink-0 sm:w-56">
-          <Image
-            src="/pins/pin-table.png"
-            alt="Dinner table at an evening event"
-            fill
-            className="object-cover"
-            sizes="224px"
-          />
-        </div>
+        <Images size={32} weight="duotone" aria-hidden="true" />
         <div className="flex flex-col gap-1">
           <p className="text-base font-semibold text-ink">No media yet</p>
           <p className="max-w-[65ch] text-sm text-mute">Add the first photo or video to open the album.</p>

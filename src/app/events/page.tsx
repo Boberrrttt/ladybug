@@ -1,5 +1,4 @@
-import { CaretRight } from "@phosphor-icons/react/ssr";
-import Image from "next/image";
+import { CalendarBlank, CaretRight } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getHost } from "@/features/auth/services/auth.service";
@@ -26,16 +25,8 @@ export default async function EventsPage() {
       </div>
       <EventCreateForm />
       {events.length === 0 ? (
-        <div className="flex flex-col gap-5 rounded-md bg-card p-6 sm:flex-row sm:items-center">
-          <div className="pin relative aspect-[4/3] w-full shrink-0 sm:w-56">
-            <Image
-              src="/pins/pin-outdoor.png"
-              alt="Outdoor gathering under pine trees"
-              fill
-              className="object-cover"
-              sizes="224px"
-            />
-          </div>
+        <div className="event-album-empty">
+          <CalendarBlank size={32} weight="duotone" aria-hidden="true" />
           <p className="max-w-[65ch] text-base text-mute">No events yet. Name one above.</p>
         </div>
       ) : (
