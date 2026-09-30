@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getHost } from "@/features/auth/services/auth.service";
+import { LadybugMark } from "@/shared/components/LadybugMark";
 
 const heroPins = [
   { src: "/pins/pin-table.png", alt: "Dinner table at an evening event" },
@@ -101,7 +102,8 @@ export default async function HomePage() {
       </section>
 
       <footer className="flex flex-wrap items-center justify-between gap-4 px-6 py-8">
-        <Link href="/" className="text-[22px] font-semibold text-primary">
+        <Link href="/" className="inline-flex items-center gap-2 text-[22px] font-semibold text-primary">
+          <LadybugMark />
           Ladybug
         </Link>
         {host ? null : (

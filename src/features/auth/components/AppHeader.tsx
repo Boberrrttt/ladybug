@@ -1,5 +1,6 @@
 import { SignIn } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
+import { LadybugMark } from "@/shared/components/LadybugMark";
 import type { User } from "@/shared/types";
 import { AccountMenu } from "./AccountMenu";
 import { EventsNavLink } from "./EventsNavLink";
@@ -12,7 +13,8 @@ export function AppHeader({ host }: { host: User | null }) {
       </a>
       <nav aria-label="Primary" className="float-nav pointer-events-auto">
         <div className="flex min-w-0 items-center gap-2">
-          <Link href="/" className="float-nav-brand">
+          <Link href="/" className="float-nav-brand gap-2">
+            <LadybugMark />
             Ladybug
           </Link>
           {host ? (
