@@ -93,7 +93,7 @@ export function PhotoGrid({
 
   if (photos.length === 0) {
     return (
-      <div className="flex flex-col gap-5 rounded-md bg-card p-6 sm:flex-row sm:items-center">
+      <div className="event-album-empty">
         <div className="pin relative aspect-[4/3] w-full shrink-0 sm:w-56">
           <Image
             src="/pins/pin-table.png"
@@ -103,7 +103,10 @@ export function PhotoGrid({
             sizes="224px"
           />
         </div>
-        <p className="max-w-[65ch] text-base text-mute">Add the first photo or video.</p>
+        <div className="flex flex-col gap-1">
+          <p className="text-base font-semibold text-ink">No media yet</p>
+          <p className="max-w-[65ch] text-sm text-mute">Add the first photo or video to open the album.</p>
+        </div>
       </div>
     );
   }

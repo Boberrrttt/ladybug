@@ -37,7 +37,7 @@ export function EventQrCard({
   }
 
   return (
-    <section className="flex w-full flex-col gap-4 rounded-md bg-card p-5 lg:sticky lg:top-28">
+    <section className="flex w-full flex-col gap-4 rounded-md bg-card p-5">
       <div className="pin mx-auto w-fit bg-canvas p-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qrDataUrl} alt="QR code for the guest album" width={180} height={180} />

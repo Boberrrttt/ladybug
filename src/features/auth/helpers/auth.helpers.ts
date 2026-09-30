@@ -1,7 +1,26 @@
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
 
-const scryptAsync = promisify(scrypt);
+const SCRYPT_N = 16384;
+const SCRYPT_R = 8;
+const SCRYPT_P = 1;
+const SCRYPT_KEYLEN = 64;
+const SCRYPT_OPTIONS = { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P } as const;
+
+function scryptAsync(
+  password: string | Buffer,
+  salt: string | Buffer,
+  keylen: number,
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, keylen, SCRYPT_OPTIONS, (caughtError, derived) => {
+      if (caughtError) {
+        reject(caughtError);
+        return;
+      }
+      resolve(derived);
+    });
+  });
+}
 
 export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -22,7 +41,7 @@ export function isValidPassword(password: string) {
 
 export async function hashPassword(password: string) {
   const salt = randomBytes(16);
-  const derived = (await scryptAsync(password, salt, 64)) as Buffer;
+  const derived = await scryptAsync(password, salt, SCRYPT_KEYLEN);
   return `${salt.toString("hex")}:${derived.toString("hex")}`;
 }
 
@@ -32,6 +51,6 @@ export async function verifyPassword(password: string, stored: string) {
     return false;
   }
   const expected = Buffer.from(hashHex, "hex");
-  const derived = (await scryptAsync(password, Buffer.from(saltHex, "hex"), 64)) as Buffer;
+  const derived = await scryptAsync(password, Buffer.from(saltHex, "hex"), SCRYPT_KEYLEN);
   return derived.length === expected.length && timingSafeEqual(derived, expected);
 }

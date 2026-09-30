@@ -3,6 +3,13 @@ import type { NextRequest } from "next/server";
 import { getHostFromSessionToken } from "@/features/auth/services/auth.service";
 import { SESSION_COOKIE } from "@/server/session-token";
 
+const BASE_SECURITY_HEADERS: Record<string, string> = {
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+};
+
 function contentSecurityPolicy(nonce: string) {
   const imageKitOrigin = (() => {
     const endpoint = process.env.IMAGEKIT_URL_ENDPOINT;
@@ -33,6 +40,13 @@ function contentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
+function applySecurityHeaders(response: NextResponse, csp: string) {
+  response.headers.set("Content-Security-Policy", csp);
+  for (const [key, value] of Object.entries(BASE_SECURITY_HEADERS)) {
+    response.headers.set(key, value);
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const requestHeaders = new Headers(request.headers);
@@ -44,7 +58,7 @@ export async function proxy(request: NextRequest) {
     const token = request.cookies.get(SESSION_COOKIE)?.value;
     if (!token || !(await getHostFromSessionToken(token))) {
       response = NextResponse.redirect(new URL("/login", request.url));
-      response.headers.set("Content-Security-Policy", csp);
+      applySecurityHeaders(response, csp);
       return response;
     }
   }
@@ -52,7 +66,7 @@ export async function proxy(request: NextRequest) {
   response = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  response.headers.set("Content-Security-Policy", csp);
+  applySecurityHeaders(response, csp);
   return response;
 }
 

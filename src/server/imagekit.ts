@@ -1,3 +1,5 @@
+import "server-only";
+
 import { randomBytes } from "node:crypto";
 
 const FILE_EXTENSIONS: Record<string, string> = {

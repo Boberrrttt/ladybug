@@ -2,6 +2,7 @@ import { CaretLeft } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getHost } from "@/features/auth/services/auth.service";
+import { EventLookPanel } from "@/features/events/components/EventLookPanel";
 import { EventQrCard } from "@/features/events/components/EventQrCard";
 import { getHostEvent } from "@/features/events/services/events.service";
 import { PhotoAlbum } from "@/features/photos/components/PhotoAlbum";
@@ -45,10 +46,13 @@ export default async function HostEventPage({
             Events
           </Link>
         </p>
-        <h1 className="heading-xl text-ink">{event.name}</h1>
+        <h1 className="heading-xl text-center text-ink">{event.name}</h1>
       </div>
+      <EventLookPanel eventId={event.id} theme={event.theme} />
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[16rem_1fr]">
-        <EventQrCard qrDataUrl={qrDataUrl} guestUrl={guestUrl} />
+        <div className="flex flex-col gap-6 lg:sticky lg:top-28">
+          <EventQrCard qrDataUrl={qrDataUrl} guestUrl={guestUrl} />
+        </div>
         <section className="flex min-w-0 flex-col gap-4">
           <PhotoAlbum eventId={event.id} heading={formatPhotoCount(photos.length)} photos={photos} canDelete />
         </section>

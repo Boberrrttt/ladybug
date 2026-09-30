@@ -1,5 +1,8 @@
+import type { EventTheme } from "./event-theme";
 import type { PhotoSource } from "./enums";
 import type { MediaKind } from "./media-kind";
+
+export type { EventTheme, EventThemePreset } from "./event-theme";
 
 export type User = {
   id: string;
@@ -14,6 +17,7 @@ export type Event = {
   name: string;
   guestSlug: string;
   createdAt: string;
+  theme: EventTheme;
 };
 
 export type Photo = {

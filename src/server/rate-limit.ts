@@ -1,3 +1,5 @@
+import "server-only";
+
 import { MongoServerError } from "mongodb";
 import { ensureIndexes, getCollection } from "@/server/db";
 import { clientIpFromHeaders } from "@/shared/helpers/request.helpers";
@@ -75,7 +77,9 @@ export async function assertAuthRateLimit(kind: "login" | "signup") {
 
 export async function assertGuestUploadRateLimit(guestSlug: string) {
   const ip = await clientIp();
-  await assertSharedRateLimit(`upload:guest:${guestSlug}:${ip}`, 30, 60 * 1000);
+  await assertSharedRateLimit(`upload:guest:${guestSlug}:${ip}`, 20, 60 * 1000);
+  await assertSharedRateLimit(`upload:guest-event:${guestSlug}`, 60, 60 * 1000);
+  await assertSharedRateLimit(`upload:guest-event-hour:${guestSlug}`, 200, 60 * 60 * 1000);
 }
 
 export async function assertHostUploadRateLimit(hostId: string) {

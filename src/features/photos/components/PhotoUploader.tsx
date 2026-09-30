@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "@phosphor-icons/react";
+import { Images, Plus } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useState, type ChangeEvent, type ReactNode } from "react";
 import { isAllowedMediaFile, rejectMediaReason } from "../helpers/photos.helpers";
@@ -73,13 +73,18 @@ export function PhotoUploader({
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="event-album-toolbar">
       <div className={`flex flex-wrap items-center gap-3 ${heading ? "justify-between" : ""}`}>
-        {heading ? <h2 className="text-[22px] font-semibold text-ink">{heading}</h2> : null}
+        {heading ? (
+          <h2 className="event-album-count">
+            <Images size={20} weight="duotone" aria-hidden="true" />
+            <span>{heading}</span>
+          </h2>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
           {actions}
           <label
-            className={`btn-secondary w-fit cursor-pointer gap-2 ${pending ? "pointer-events-none opacity-60" : ""}`}
+            className={`btn-primary w-fit cursor-pointer gap-2 ${pending ? "pointer-events-none opacity-60" : ""}`}
           >
             <Plus size={16} weight="bold" aria-hidden="true" />
             {pending ? "Adding…" : "Add media"}

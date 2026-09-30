@@ -1,5 +1,8 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { EventAlbumHero } from "@/features/events/components/EventAlbumHero";
+import { resolveEventBrandSurfaceStyle } from "@/features/events/helpers/event-theme.helpers";
 import { getEventByGuestSlug } from "@/features/events/services/events.service";
 import { PhotoAlbum } from "@/features/photos/components/PhotoAlbum";
 import { formatPhotoCount } from "@/features/photos/helpers/photos.helpers";
@@ -24,15 +27,25 @@ export default async function GuestAlbumPage({ params }: GuestAlbumPageProps) {
     notFound();
   }
   const photos = await listPhotos(event.id);
+  const brandStyle = resolveEventBrandSurfaceStyle(event.theme) as CSSProperties;
 
   return (
-    <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 px-6 py-12">
-      <h1 className="heading-xl text-ink">{event.name}</h1>
-      <PhotoAlbum
-        guestSlug={event.guestSlug}
-        heading={formatPhotoCount(photos.length)}
-        photos={photos}
-      />
-    </main>
+    <div
+      className="event-brand relative -mt-20 flex min-h-[100dvh] flex-1 flex-col pt-20"
+      style={brandStyle}
+    >
+      <main className="w-full px-4 py-12 md:px-6">
+        <div className="event-album-shell mx-auto flex w-full flex-col gap-10">
+          <EventAlbumHero name={event.name} />
+          <section className="event-album-well">
+            <PhotoAlbum
+              guestSlug={event.guestSlug}
+              heading={formatPhotoCount(photos.length)}
+              photos={photos}
+            />
+          </section>
+        </div>
+      </main>
+    </div>
   );
 }

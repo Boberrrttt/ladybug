@@ -1,8 +1,9 @@
 import type { MediaKind } from "../../../shared/media-kind.ts";
 
 export const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
-export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 15 * 1024 * 1024;
 export const MAX_PHOTOS_PER_EVENT = 500;
+export const MAX_EVENT_UPLOAD_BYTES = 500 * 1024 * 1024;
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/webm"]);
@@ -29,7 +30,7 @@ export function rejectMediaReason(file: File): string | null {
     return "Image too large (max 15MB).";
   }
   if (kind === "VIDEO" && file.size > MAX_VIDEO_BYTES) {
-    return "Video too large (max 100MB).";
+    return "Video too large (max 15MB).";
   }
   return null;
 }
@@ -88,19 +89,31 @@ export function formatPhotoCount(count: number) {
   return count === 1 ? "1 photo" : `${count} photos`;
 }
 
+export function uploadBudgetError(count: number, bytes: number, addBytes: number) {
+  if (count >= MAX_PHOTOS_PER_EVENT) {
+    return "Album is full";
+  }
+  if (bytes + addBytes > MAX_EVENT_UPLOAD_BYTES) {
+    return "Album storage limit reached";
+  }
+  return "Album is full";
+}
+
 export function isImageKitUrl(url: string, endpoint = process.env.IMAGEKIT_URL_ENDPOINT) {
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== "https:") {
+    if (parsed.protocol !== "https:" || !endpoint) {
       return false;
     }
-    if (parsed.host === "ik.imagekit.io" || parsed.host.endsWith(".imagekit.io")) {
+    const expected = new URL(endpoint);
+    if (parsed.host !== expected.host) {
+      return false;
+    }
+    const prefix = expected.pathname.replace(/\/$/, "");
+    if (!prefix) {
       return true;
     }
-    if (!endpoint) {
-      return false;
-    }
-    return parsed.host === new URL(endpoint).host;
+    return parsed.pathname === prefix || parsed.pathname.startsWith(`${prefix}/`);
   } catch {
     return false;
   }

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 3004",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/features/auth/helpers/auth.helpers.test.ts src/features/events/helpers/events.helpers.test.ts src/features/photos/helpers/photos.helpers.test.ts src/server/rate-limit.test.ts src/shared/helpers/request.helpers.test.ts"
+    "test": "node --experimental-strip-types --test src/features/auth/helpers/auth.helpers.test.ts src/features/events/helpers/events.helpers.test.ts src/features/events/helpers/event-theme.helpers.test.ts src/features/photos/helpers/photos.helpers.test.ts src/server/rate-limit.test.ts src/shared/helpers/request.helpers.test.ts"
   },
   "dependencies": {
     "@imagekit/next": "^2.1.6",

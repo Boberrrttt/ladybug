@@ -11,13 +11,15 @@ import {
 import { uploadImageKitFile } from "@/server/imagekit";
 import { PhotoSource } from "@/shared/enums";
 import { isGuestSlug } from "@/features/events/helpers/events.helpers";
+import { getMediaKind, hasAllowedMediaMagic, rejectMediaReason } from "../helpers/photos.helpers";
 import {
-  getMediaKind,
-  hasAllowedMediaMagic,
-  MAX_PHOTOS_PER_EVENT,
-  rejectMediaReason,
-} from "../helpers/photos.helpers";
-import { countPhotos, purgePhotos, restorePhotos, softDeletePhotos, savePhoto } from "./photos.service";
+  purgePhotos,
+  releaseUploadBudget,
+  reserveUploadBudget,
+  restorePhotos,
+  savePhoto,
+  softDeletePhotos,
+} from "./photos.service";
 
 export async function uploadPhotoAction(formData: FormData) {
   const file = formData.get("file");
@@ -55,19 +57,23 @@ export async function uploadPhotoAction(formData: FormData) {
   if (!event) {
     throw new Error("Event not found");
   }
-  if ((await countPhotos(event.id)) >= MAX_PHOTOS_PER_EVENT) {
-    throw new Error("Album is full");
+  await reserveUploadBudget(event.id, file.size);
+  let photo;
+  try {
+    const uploaded = await uploadImageKitFile(file);
+    photo = await savePhoto({
+      eventId: event.id,
+      url: uploaded.url,
+      fileId: uploaded.fileId,
+      filePath: uploaded.filePath,
+      source,
+      mediaKind,
+      byteSize: file.size,
+    });
+  } catch (caughtError) {
+    await releaseUploadBudget(event.id, file.size);
+    throw caughtError;
   }
-
-  const uploaded = await uploadImageKitFile(file);
-  const photo = await savePhoto({
-    eventId: event.id,
-    url: uploaded.url,
-    fileId: uploaded.fileId,
-    filePath: uploaded.filePath,
-    source,
-    mediaKind,
-  });
   revalidatePath(`/event/${event.guestSlug}`);
   revalidatePath(`/events/${event.id}`);
   return photo;

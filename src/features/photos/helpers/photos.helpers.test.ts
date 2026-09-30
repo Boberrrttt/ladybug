@@ -6,6 +6,7 @@ import {
   isAllowedMediaFile,
   isImageKitUrl,
   rejectMediaReason,
+  uploadBudgetError,
 } from "./photos.helpers.ts";
 
 test("isAllowedMediaFile rejects svg and oversized files", () => {
@@ -15,7 +16,7 @@ test("isAllowedMediaFile rejects svg and oversized files", () => {
   Object.defineProperty(bigImage, "size", { value: 16 * 1024 * 1024 });
   assert.equal(isAllowedMediaFile(bigImage), false);
   const bigVideo = new File([new Uint8Array([1])], "big.mp4", { type: "video/mp4" });
-  Object.defineProperty(bigVideo, "size", { value: 101 * 1024 * 1024 });
+  Object.defineProperty(bigVideo, "size", { value: 16 * 1024 * 1024 });
   assert.equal(isAllowedMediaFile(bigVideo), false);
   assert.equal(isAllowedMediaFile(new File([new Uint8Array([1])], "ok.mp4", { type: "video/mp4" })), true);
 });
@@ -26,8 +27,8 @@ test("rejectMediaReason returns size and type messages", () => {
   Object.defineProperty(bigImage, "size", { value: 16 * 1024 * 1024 });
   assert.equal(rejectMediaReason(bigImage), "Image too large (max 15MB).");
   const bigVideo = new File([new Uint8Array([1])], "big.mp4", { type: "video/mp4" });
-  Object.defineProperty(bigVideo, "size", { value: 101 * 1024 * 1024 });
-  assert.equal(rejectMediaReason(bigVideo), "Video too large (max 100MB).");
+  Object.defineProperty(bigVideo, "size", { value: 16 * 1024 * 1024 });
+  assert.equal(rejectMediaReason(bigVideo), "Video too large (max 15MB).");
   assert.equal(rejectMediaReason(new File([new Uint8Array([1])], "ok.jpg", { type: "image/jpeg" })), null);
 });
 
@@ -64,12 +65,18 @@ test("hasAllowedMediaMagic accepts jpeg png gif webp mp4 webm", async () => {
   assert.equal(await hasAllowedMediaMagic(spoofVideo), false);
 });
 
-test("isImageKitUrl accepts ImageKit hosts", () => {
-  assert.equal(isImageKitUrl("https://ik.imagekit.io/demo/photo.jpg"), true);
-  assert.equal(isImageKitUrl("http://ik.imagekit.io/demo/photo.jpg"), false);
-  assert.equal(isImageKitUrl("https://evil.example/photo.jpg"), false);
-  assert.equal(
-    isImageKitUrl("https://cdn.example.com/photo.jpg", "https://cdn.example.com"),
-    true,
-  );
+test("isImageKitUrl accepts only the configured endpoint", () => {
+  const endpoint = "https://ik.imagekit.io/demo";
+  assert.equal(isImageKitUrl("https://ik.imagekit.io/demo/photo.jpg", endpoint), true);
+  assert.equal(isImageKitUrl("https://ik.imagekit.io/other/photo.jpg", endpoint), false);
+  assert.equal(isImageKitUrl("https://ik.imagekit.io/demo/photo.jpg"), false);
+  assert.equal(isImageKitUrl("http://ik.imagekit.io/demo/photo.jpg", endpoint), false);
+  assert.equal(isImageKitUrl("https://evil.example/photo.jpg", endpoint), false);
+  assert.equal(isImageKitUrl("https://cdn.example.com/photo.jpg", "https://cdn.example.com"), true);
+});
+
+test("uploadBudgetError names the cap that failed", () => {
+  assert.equal(uploadBudgetError(500, 0, 1), "Album is full");
+  assert.equal(uploadBudgetError(1, 500 * 1024 * 1024, 1), "Album storage limit reached");
+  assert.equal(uploadBudgetError(1, 1, 1), "Album is full");
 });

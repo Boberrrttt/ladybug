@@ -1,3 +1,5 @@
+import "server-only";
+
 import { MongoClient, MongoTopologyClosedError, type Collection, type Db, type Document } from "mongodb";
 
 const globalForMongo = globalThis as typeof globalThis & {
@@ -32,7 +34,11 @@ export function getMongoClient() {
     resetMongoClient();
     globalForMongo.mongoClient = new MongoClient(uri);
   }
-  return globalForMongo.mongoClient;
+  const client = globalForMongo.mongoClient;
+  if (!client) {
+    throw new Error("Mongo client unavailable");
+  }
+  return client;
 }
 
 export function getDb(): Db {
