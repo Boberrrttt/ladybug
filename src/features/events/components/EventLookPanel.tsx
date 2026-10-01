@@ -13,6 +13,8 @@ import type { EventTheme } from "@/shared/types";
 import {
   EVENT_THEME_PRESETS,
   EventThemePreset,
+  findEventThemePresetByColors,
+  onColorForBackground,
   resolveEventBrandSurfaceStyle,
   resolveEventThemeTokens,
 } from "../helpers/event-theme.helpers";
@@ -41,6 +43,7 @@ export function EventLookPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedPreset = EVENT_THEME_PRESETS.find((preset) => preset.id === presetId);
+  const matchedPreset = findEventThemePresetByColors(page, primary);
 
   const draftTheme = useMemo<EventTheme>(() => {
     const base = resolveEventThemeTokens({ presetId });
@@ -61,6 +64,15 @@ export function EventLookPanel({
     () => resolveEventBrandSurfaceStyle(draftTheme) as CSSProperties,
     [draftTheme],
   );
+
+  function applyPickedColor(nextPage: string, nextPrimary: string) {
+    const match = findEventThemePresetByColors(nextPage, nextPrimary);
+    if (match) {
+      setPresetId(match.id);
+    }
+    setPage(nextPage);
+    setPrimary(nextPrimary);
+  }
 
   function selectPreset(nextPresetId: EventThemePreset) {
     const tokens = resolveEventThemeTokens({ presetId: nextPresetId });
@@ -140,7 +152,7 @@ export function EventLookPanel({
             />
           ) : null}
           <span className="event-look-toggle-meta">
-            {selectedPreset?.label ?? "Custom"}
+            {matchedPreset?.label ?? "Custom"}
             {backgroundUrl ? " · Image" : ""}
           </span>
           <CaretDown
@@ -195,7 +207,7 @@ export function EventLookPanel({
                   <input
                     type="color"
                     value={page}
-                    onChange={(changeEvent) => setPage(changeEvent.target.value)}
+                    onChange={(changeEvent) => applyPickedColor(changeEvent.target.value, primary)}
                     className="event-look-color-input"
                     aria-label="Page color"
                   />
@@ -208,7 +220,7 @@ export function EventLookPanel({
                   <input
                     type="color"
                     value={primary}
-                    onChange={(changeEvent) => setPrimary(changeEvent.target.value)}
+                    onChange={(changeEvent) => applyPickedColor(page, changeEvent.target.value)}
                     className="event-look-color-input"
                     aria-label="Accent color"
                   />
@@ -236,13 +248,13 @@ export function EventLookPanel({
             />
             <button
               type="button"
-              className={`event-look-drop${backgroundUrl ? " has-image" : ""}`}
+              className={`event-look-drop${backgroundUrl ? " has-image" : " has-color"}`}
               disabled={backgroundPending}
               onClick={() => fileInputRef.current?.click()}
               style={
                 backgroundUrl
                   ? { backgroundImage: `url(${JSON.stringify(backgroundUrl)})` }
-                  : undefined
+                  : { backgroundColor: page, color: onColorForBackground(page) }
               }
             >
               <span className="event-look-drop-veil" aria-hidden="true" />
@@ -298,7 +310,7 @@ export function EventLookPanel({
             className="btn-primary event-look-save-btn"
             disabled={pending || backgroundPending}
           >
-            {pending ? "Saving…" : "Save look"}
+            {pending ? "Saving…" : "Save"}
           </button>
           {state?.error ? <p className="text-sm text-error">{state.error}</p> : null}
         </form>

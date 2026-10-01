@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckSquare } from "@phosphor-icons/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Photo } from "@/shared/types";
@@ -9,7 +10,7 @@ import {
   restorePhotosAction,
 } from "../services/photos.actions";
 import { PhotoGrid, PhotoGridSkeleton } from "./PhotoGrid";
-import { PhotoUploader } from "./PhotoUploader";
+import { PhotoUploader, type UploadPhase } from "./PhotoUploader";
 
 const UNDO_MS = 8000;
 
@@ -23,7 +24,8 @@ type PhotoAlbumProps = {
 
 export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: PhotoAlbumProps) {
   const router = useRouter();
-  const [uploadingCount, setUploadingCount] = useState(0);
+  const [addingCount, setAddingCount] = useState(0);
+  const uploadPhaseRef = useRef<UploadPhase>("idle");
   const [gridBusy, setGridBusy] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -34,6 +36,14 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
   const purgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingPurgeRef = useRef<string[] | null>(null);
   const photoKey = photos.map((photo) => photo.id).join(",");
+  const [trackedPhotoKey, setTrackedPhotoKey] = useState(photoKey);
+  if (photoKey !== trackedPhotoKey) {
+    setTrackedPhotoKey(photoKey);
+    if (uploadPhaseRef.current === "settled") {
+      uploadPhaseRef.current = "idle";
+      setAddingCount(0);
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -46,6 +56,11 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
   useEffect(() => {
     setGridBusy(false);
   }, [photoKey]);
+
+  function handleUploadingChange(count: number, phase: UploadPhase = "active") {
+    uploadPhaseRef.current = phase;
+    setAddingCount(phase === "idle" ? 0 : count);
+  }
 
   function clearPurgeTimer() {
     if (purgeTimerRef.current) {
@@ -144,8 +159,6 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
 
   const allSelected = photos.length > 0 && selectedIds.length === photos.length;
   const selectedCount = selectedIds.length;
-  const gridLoading = gridBusy || uploadingCount > 0;
-  const skeletonCount = Math.max(photos.length, uploadingCount, 1);
 
   return (
     <div className="flex flex-col gap-4">
@@ -154,20 +167,21 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
           <button type="button" className="photo-select-side" onClick={exitSelect} disabled={deleting}>
             Cancel
           </button>
+          <p className="photo-select-count">
+            {selectedCount === 0 ? "Select items" : `${selectedCount} selected`}
+          </p>
           <div className="photo-select-actions">
             <button type="button" className="photo-select-side" onClick={toggleSelectAll} disabled={deleting}>
               {allSelected ? "Deselect all" : "Select all"}
             </button>
-            {selectedCount > 0 ? (
-              <button
-                type="button"
-                className="btn-primary photo-select-delete"
-                disabled={deleting}
-                onClick={() => setConfirmOpen(true)}
-              >
-                Delete
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="btn-primary photo-select-delete"
+              disabled={deleting || selectedCount === 0}
+              onClick={() => setConfirmOpen(true)}
+            >
+              {allSelected ? "Delete all" : "Delete"}
+            </button>
           </div>
         </div>
       ) : (
@@ -175,10 +189,11 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
           guestSlug={guestSlug}
           eventId={eventId}
           heading={heading}
-          onUploadingChange={setUploadingCount}
+          onUploadingChange={handleUploadingChange}
           actions={
             canDelete && photos.length > 0 ? (
-              <button type="button" className="btn-tertiary" onClick={() => setSelecting(true)}>
+              <button type="button" className="btn-secondary gap-2" onClick={() => setSelecting(true)}>
+                <CheckSquare size={16} weight="bold" aria-hidden="true" />
                 Select
               </button>
             ) : null
@@ -190,11 +205,12 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
           {error}
         </p>
       ) : null}
-      {gridLoading ? (
-        <PhotoGridSkeleton count={skeletonCount} />
+      {gridBusy ? (
+        <PhotoGridSkeleton count={Math.max(photos.length, 1)} />
       ) : (
         <PhotoGrid
           photos={photos}
+          pendingCount={addingCount}
           canSelect={Boolean(canDelete)}
           selecting={selecting}
           selectedIds={selectedIds}

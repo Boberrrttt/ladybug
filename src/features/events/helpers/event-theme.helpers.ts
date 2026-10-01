@@ -151,6 +151,14 @@ export const DEFAULT_EVENT_THEME: EventTheme = {
   presetId: EventThemePreset.CLASSIC,
 };
 
+export function findEventThemePresetByColors(page: string, primary: string) {
+  const pageHex = page.toLowerCase();
+  const primaryHex = primary.toLowerCase();
+  return EVENT_THEME_PRESETS.find(
+    (preset) => preset.tokens.page === pageHex && preset.tokens.primary === primaryHex,
+  );
+}
+
 export function isEventThemePreset(value: unknown): value is EventThemePreset {
   return typeof value === "string" && Object.values(EventThemePreset).includes(value as EventThemePreset);
 }
@@ -223,11 +231,13 @@ export function resolveEventBrandSurfaceStyle(
 ): Record<string, string> {
   const tokens = resolveEventThemeTokens(theme);
   const cssVars = resolveEventThemeCssVars(theme);
+  const titleColor = theme.backgroundUrl ? tokens.ink : onColorForBackground(tokens.page);
   if (!theme.backgroundUrl) {
     return {
       ...cssVars,
       background: tokens.page,
       color: tokens.body,
+      "--album-title": titleColor,
     };
   }
   return {
@@ -238,6 +248,7 @@ export function resolveEventBrandSurfaceStyle(
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
     color: tokens.body,
+    "--album-title": titleColor,
   };
 }
 

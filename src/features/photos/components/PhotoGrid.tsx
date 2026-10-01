@@ -20,24 +20,29 @@ function gridClassForCount(count: number) {
   return "pin-grid";
 }
 
+function SkeletonPins({ count }: { count: number }) {
+  return Array.from({ length: count }, (_, index) => (
+    <li
+      key={`pending-media-${index}`}
+      className="pin photo-skeleton"
+      style={{ aspectRatio: SKELETON_RATIOS[index % SKELETON_RATIOS.length] }}
+      aria-hidden="true"
+    />
+  ));
+}
+
 export function PhotoGridSkeleton({ count }: { count: number }) {
   const pinCount = Math.max(count, 1);
   return (
     <ul className={gridClassForCount(pinCount)} aria-busy="true" aria-label="Loading media">
-      {Array.from({ length: pinCount }, (_, index) => (
-        <li
-          key={`grid-skeleton-${index}`}
-          className="pin photo-skeleton"
-          style={{ aspectRatio: SKELETON_RATIOS[index % SKELETON_RATIOS.length] }}
-          aria-hidden="true"
-        />
-      ))}
+      <SkeletonPins count={pinCount} />
     </ul>
   );
 }
 
 export function PhotoGrid({
   photos,
+  pendingCount = 0,
   canSelect = false,
   selecting = false,
   selectedIds = [],
@@ -45,6 +50,7 @@ export function PhotoGrid({
   onLongPressSelect,
 }: {
   photos: Photo[];
+  pendingCount?: number;
   canSelect?: boolean;
   selecting?: boolean;
   selectedIds?: string[];
@@ -90,7 +96,7 @@ export function PhotoGrid({
     }
   }
 
-  if (photos.length === 0) {
+  if (photos.length === 0 && pendingCount === 0) {
     return (
       <div className="event-album-empty">
         <Images size={32} weight="duotone" aria-hidden="true" />
@@ -102,9 +108,16 @@ export function PhotoGrid({
     );
   }
 
+  const adding = pendingCount > 0;
+
   return (
     <>
-      <ul className={gridClassForCount(photos.length)}>
+      <ul
+        className={gridClassForCount(photos.length + pendingCount)}
+        aria-busy={adding || undefined}
+        aria-label={adding ? "Adding media" : undefined}
+      >
+        {adding ? <SkeletonPins count={pendingCount} /> : null}
         {photos.map((photo, index) => {
           const isSelected = selectedSet.has(photo.id);
           return (

@@ -7,6 +7,7 @@ import {
   isHexColor,
   normalizeEventTheme,
   normalizeHexColor,
+  findEventThemePresetByColors,
   onColorForBackground,
   parseThemeFromForm,
   resolveEventBrandSurfaceStyle,
@@ -114,4 +115,21 @@ test("resolveEventBrandSurfaceStyle uses bare background image", () => {
   assert.equal(style.backgroundSize, "cover");
   assert.doesNotMatch(style.backgroundImage ?? "", /linear-gradient/);
   assert.match(style.backgroundImage ?? "", /ik\.imagekit\.io\/demo\/bg\.jpg/);
+  assert.equal(style["--album-title"], "#000000");
+});
+
+test("findEventThemePresetByColors matches a preset from the color picker", () => {
+  assert.equal(findEventThemePresetByColors("#F7F3EB", "#8A5A2B")?.label, "Sand");
+  assert.equal(findEventThemePresetByColors("#111111", "#222222"), undefined);
+});
+
+test("resolveEventBrandSurfaceStyle contrasts title with page color", () => {
+  const dark = resolveEventBrandSurfaceStyle({
+    presetId: EventThemePreset.SAND,
+    page: "#1a1208",
+  });
+  assert.equal(dark["--album-title"], "#ffffff");
+
+  const light = resolveEventBrandSurfaceStyle(DEFAULT_EVENT_THEME);
+  assert.equal(light["--album-title"], "#111111");
 });

@@ -409,6 +409,7 @@ body {
   font-weight: 700;
   letter-spacing: -1.4px;
   line-height: 1.1;
+  color: var(--album-title, var(--color-ink));
 }
 
 @media (min-width: 768px) {
@@ -946,6 +947,12 @@ body {
   color: var(--color-on-primary);
 }
 
+.event-look-drop.has-color .event-look-drop-body svg,
+.event-look-drop.has-color .event-look-drop-title,
+.event-look-drop.has-color .event-look-drop-hint {
+  color: inherit;
+}
+
 .event-look-drop-title {
   font-size: 0.875rem;
   font-weight: 700;
@@ -977,7 +984,7 @@ body {
   font-weight: 700;
   letter-spacing: -0.35px;
   line-height: 1.15;
-  color: var(--color-ink);
+  color: var(--album-title, var(--color-ink));
   text-align: center;
 }
 
@@ -1121,6 +1128,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   background: rgb(38 38 34 / 0.28);
   pointer-events: none;
 }
@@ -1148,11 +1156,28 @@ body {
 }
 
 .photo-select-bar {
+  position: sticky;
+  top: 5.5rem;
+  z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  min-height: 40px;
+  gap: 8px 12px;
+  min-height: 48px;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-ink) 8%, transparent);
+  background: color-mix(in srgb, var(--color-canvas) 94%, transparent);
+}
+
+.photo-select-count {
+  flex: 1 1 auto;
+  min-width: 6.5rem;
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .photo-select-actions {
@@ -1200,6 +1225,13 @@ body {
   height: 36px;
   padding-inline: 12px;
   font-size: 13px;
+}
+
+.photo-select-delete:disabled {
+  background: var(--color-card);
+  color: var(--color-ash);
+  cursor: not-allowed;
+  transform: none;
 }
 
 @media (max-width: 420px) {

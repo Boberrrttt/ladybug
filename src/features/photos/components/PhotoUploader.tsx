@@ -6,11 +6,13 @@ import { useState, type ChangeEvent, type ReactNode } from "react";
 import { isAllowedMediaFile, rejectMediaReason } from "../helpers/photos.helpers";
 import { uploadPhotoAction } from "../services/photos.actions";
 
+export type UploadPhase = "active" | "settled" | "idle";
+
 type PhotoUploaderProps = {
   guestSlug?: string;
   eventId?: string;
   heading?: string;
-  onUploadingChange?: (count: number) => void;
+  onUploadingChange?: (count: number, phase?: UploadPhase) => void;
   actions?: ReactNode;
 };
 
@@ -44,8 +46,8 @@ export function PhotoUploader({
     }
 
     setPending(true);
-    let remaining = accepted.length;
-    onUploadingChange?.(remaining);
+    onUploadingChange?.(accepted.length, "active");
+    let uploaded = 0;
     try {
       for (const file of accepted) {
         const formData = new FormData();
@@ -57,18 +59,23 @@ export function PhotoUploader({
           formData.set("eventId", eventId);
         }
         await uploadPhotoAction(formData);
-        remaining -= 1;
-        onUploadingChange?.(remaining);
+        uploaded += 1;
       }
       setIsError(false);
       setStatus(`Added ${accepted.length} item${accepted.length === 1 ? "" : "s"}.`);
+      onUploadingChange?.(accepted.length, "settled");
       router.refresh();
     } catch (caughtError) {
       setIsError(true);
       setStatus(caughtError instanceof Error ? caughtError.message : "Upload failed");
+      if (uploaded > 0) {
+        onUploadingChange?.(uploaded, "settled");
+        router.refresh();
+      } else {
+        onUploadingChange?.(0, "idle");
+      }
     } finally {
       setPending(false);
-      onUploadingChange?.(0);
     }
   }
 
@@ -84,7 +91,7 @@ export function PhotoUploader({
         <div className="flex flex-wrap items-center gap-2">
           {actions}
           <label
-            className={`btn-primary w-fit cursor-pointer gap-2 ${pending ? "pointer-events-none opacity-60" : ""}`}
+            className={`btn-primary relative w-fit cursor-pointer gap-2 ${pending ? "pointer-events-none opacity-60" : ""}`}
           >
             <Plus size={16} weight="bold" aria-hidden="true" />
             {pending ? "Adding…" : "Add media"}
