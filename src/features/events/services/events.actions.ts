@@ -15,11 +15,12 @@ import {
   assertHostUploadRateLimit,
 } from "@/server/rate-limit";
 import { parseThemeFromForm } from "../helpers/event-theme.helpers";
-import { publicEventError } from "../helpers/events.helpers";
+import { normalizeDriveUrl, publicEventError } from "../helpers/events.helpers";
 import {
   clearEventBackground,
   createEvent,
   setEventBackground,
+  setEventDriveUrl,
   updateEventTheme,
 } from "./events.service";
 
@@ -56,6 +57,27 @@ export async function updateEventThemeAction(
     return null;
   } catch (caughtError) {
     return { error: publicEventError(caughtError, "Could not save look") };
+  }
+}
+
+export async function updateEventDriveUrlAction(
+  _previous: { error: string } | null,
+  formData: FormData,
+) {
+  const host = await getHost();
+  if (!host) {
+    redirect("/login");
+  }
+  const eventId = String(formData.get("eventId") ?? "");
+  try {
+    await assertHostMutationRateLimit(host.id);
+    const driveUrl = normalizeDriveUrl(String(formData.get("driveUrl") ?? ""));
+    const event = await setEventDriveUrl(host.id, eventId, driveUrl);
+    revalidatePath(`/events/${event.id}`);
+    revalidatePath(`/event/${event.guestSlug}`);
+    return null;
+  } catch (caughtError) {
+    return { error: publicEventError(caughtError, "Could not save Drive link") };
   }
 }
 

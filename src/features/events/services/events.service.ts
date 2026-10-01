@@ -6,7 +6,7 @@ import { ensureIndexes, getCollection } from "@/server/db";
 import type { Event, EventTheme } from "@/shared/types";
 import { isImageKitUrl } from "@/features/photos/helpers/photos.helpers";
 import { normalizeEventTheme } from "../helpers/event-theme.helpers";
-import { createGuestSlug, isGuestSlug, normalizeEventName } from "../helpers/events.helpers";
+import { createGuestSlug, isGuestSlug, normalizeEventName, readDriveUrl } from "../helpers/events.helpers";
 
 type EventThemeDoc = EventTheme & {
   backgroundFileId?: string;
@@ -18,6 +18,7 @@ type EventDoc = {
   guestSlug: string;
   createdAt: Date;
   theme?: EventThemeDoc;
+  driveUrl?: string;
 };
 
 function events() {
@@ -34,6 +35,7 @@ function serializeTheme(theme: EventThemeDoc | undefined): EventTheme {
 }
 
 function serializeEvent(doc: WithId<EventDoc>): Event {
+  const driveUrl = readDriveUrl(doc.driveUrl);
   return {
     id: doc._id.toString(),
     hostId: doc.hostId.toString(),
@@ -41,6 +43,7 @@ function serializeEvent(doc: WithId<EventDoc>): Event {
     guestSlug: doc.guestSlug,
     createdAt: doc.createdAt.toISOString(),
     theme: serializeTheme(doc.theme),
+    ...(driveUrl ? { driveUrl } : {}),
   };
 }
 
@@ -176,6 +179,22 @@ export async function setEventBackground(
     } catch {
       // Best-effort cleanup; new background already saved.
     }
+  }
+  return serializeEvent(result);
+}
+
+export async function setEventDriveUrl(hostId: string, eventId: string, driveUrl: string | null) {
+  if (!ObjectId.isValid(hostId) || !ObjectId.isValid(eventId)) {
+    throw new Error("Event not found");
+  }
+  await ensureIndexes();
+  const result = await events().findOneAndUpdate(
+    { _id: new ObjectId(eventId), hostId: new ObjectId(hostId) },
+    driveUrl ? { $set: { driveUrl } } : { $unset: { driveUrl: "" } },
+    { returnDocument: "after" },
+  );
+  if (!result) {
+    throw new Error("Event not found");
   }
   return serializeEvent(result);
 }

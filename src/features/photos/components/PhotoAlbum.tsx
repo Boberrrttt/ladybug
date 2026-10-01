@@ -4,25 +4,22 @@ import { CheckSquare } from "@phosphor-icons/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Photo } from "@/shared/types";
-import {
-  deletePhotosAction,
-  purgePhotosAction,
-  restorePhotosAction,
-} from "../services/photos.actions";
+import { deletePhotosAction, purgePhotosAction } from "../services/photos.actions";
 import { PhotoGrid, PhotoGridSkeleton } from "./PhotoGrid";
 import { PhotoUploader, type UploadPhase } from "./PhotoUploader";
 
-const UNDO_MS = 8000;
+const UNDO_MS = 5000;
 
 type PhotoAlbumProps = {
   photos: Photo[];
   canDelete?: boolean;
   guestSlug?: string;
   eventId?: string;
+  driveUrl?: string;
   heading?: string;
 };
 
-export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: PhotoAlbumProps) {
+export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, driveUrl, heading }: PhotoAlbumProps) {
   const router = useRouter();
   const [addingCount, setAddingCount] = useState(0);
   const uploadPhaseRef = useRef<UploadPhase>("idle");
@@ -129,26 +126,6 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
     }
   }
 
-  async function undoDelete() {
-    if (!undoIds) {
-      return;
-    }
-    const ids = undoIds;
-    pendingPurgeRef.current = null;
-    clearPurgeTimer();
-    setUndoIds(null);
-    setError(null);
-    setGridBusy(true);
-    try {
-      await restorePhotosAction(ids, eventId);
-      router.refresh();
-    } catch (caughtError) {
-      setGridBusy(false);
-      setError(caughtError instanceof Error ? caughtError.message : "Undo failed");
-      void purgePhotosAction(ids, eventId);
-    }
-  }
-
   useEffect(() => {
     const liveIds = new Set(photos.map((photo) => photo.id));
     setSelectedIds((current) => {
@@ -168,7 +145,7 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
             Cancel
           </button>
           <p className="photo-select-count">
-            {selectedCount === 0 ? "Select items" : `${selectedCount} selected`}
+            {selectedCount > 0 ? `${selectedCount} selected` : null}
           </p>
           <div className="photo-select-actions">
             <button type="button" className="photo-select-side" onClick={toggleSelectAll} disabled={deleting}>
@@ -188,6 +165,7 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
         <PhotoUploader
           guestSlug={guestSlug}
           eventId={eventId}
+          driveUrl={driveUrl}
           heading={heading}
           onUploadingChange={handleUploadingChange}
           actions={
@@ -228,12 +206,7 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, heading }: P
       ) : null}
       {undoIds ? (
         <div className="photo-undo" role="status" aria-live="polite">
-          <span>
-            Deleted {undoIds.length} item{undoIds.length === 1 ? "" : "s"}.
-          </span>
-          <button type="button" className="btn-secondary" onClick={() => void undoDelete()}>
-            Undo
-          </button>
+          Deleted {undoIds.length} item{undoIds.length === 1 ? "" : "s"}.
         </div>
       ) : null}
     </div>

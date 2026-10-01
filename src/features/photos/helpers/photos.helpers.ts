@@ -1,14 +1,14 @@
-import type { MediaKind } from "../../../shared/media-kind.ts";
+import { MediaKind, type MediaKind as MediaKindValue } from "../../../shared/media-kind.ts";
 
-export const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
-export const MAX_VIDEO_BYTES = 15 * 1024 * 1024;
+export const MAX_PHOTO_BYTES = 100 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
 export const MAX_PHOTOS_PER_EVENT = 500;
 export const MAX_EVENT_UPLOAD_BYTES = 500 * 1024 * 1024;
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/webm"]);
 
-export function getMediaKind(file: File): MediaKind | null {
+export function getMediaKind(file: File): MediaKindValue | null {
   if (ALLOWED_IMAGE_TYPES.has(file.type)) {
     return "IMAGE";
   }
@@ -27,10 +27,10 @@ export function rejectMediaReason(file: File): string | null {
     return "Unsupported file type.";
   }
   if (kind === "IMAGE" && file.size > MAX_PHOTO_BYTES) {
-    return "Image too large (max 15MB).";
+    return "Image too large (max 100MB).";
   }
   if (kind === "VIDEO" && file.size > MAX_VIDEO_BYTES) {
-    return "Video too large (max 15MB).";
+    return "Video too large (max 25MB).";
   }
   return null;
 }
@@ -85,8 +85,24 @@ export async function hasAllowedMediaMagic(file: File) {
 
 export const hasAllowedImageMagic = hasAllowedMediaMagic;
 
-export function formatPhotoCount(count: number) {
-  return count === 1 ? "1 photo" : `${count} photos`;
+export function formatMediaCount(items: { mediaKind: MediaKindValue }[]) {
+  let images = 0;
+  let videos = 0;
+  for (const item of items) {
+    if (item.mediaKind === MediaKind.VIDEO) {
+      videos += 1;
+    } else {
+      images += 1;
+    }
+  }
+  if (images === 0 && videos === 0) {
+    return "No media";
+  }
+  const parts = [
+    images === 1 ? "1 photo" : images > 1 ? `${images} photos` : "",
+    videos === 1 ? "1 video" : videos > 1 ? `${videos} videos` : "",
+  ].filter(Boolean);
+  return parts.join(", ");
 }
 
 export function uploadBudgetError(count: number, bytes: number, addBytes: number) {
@@ -97,6 +113,27 @@ export function uploadBudgetError(count: number, bytes: number, addBytes: number
     return "Album storage limit reached";
   }
   return "Album is full";
+}
+
+const GRID_THUMB_WIDTH = 400;
+
+export function gridThumbUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    const { hostname } = parsed;
+    // Require the imagekit.io registrable host. endsWith("imagekit.io") also matches notimagekit.io.
+    const imageKitHost = hostname === "imagekit.io" || hostname.endsWith(".imagekit.io");
+    if (parsed.protocol !== "https:" || !imageKitHost) {
+      return url;
+    }
+    if (/\.(mp4|webm)$/i.test(parsed.pathname)) {
+      parsed.pathname = `${parsed.pathname}/ik-thumbnail.jpg`;
+    }
+    parsed.searchParams.set("tr", `w-${GRID_THUMB_WIDTH}`);
+    return parsed.toString();
+  } catch {
+    return url;
+  }
 }
 
 export function isImageKitUrl(url: string, endpoint = process.env.IMAGEKIT_URL_ENDPOINT) {

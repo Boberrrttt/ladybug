@@ -4,9 +4,9 @@ import { Check, Images, Play } from "@phosphor-icons/react";
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { MediaKind } from "@/shared/media-kind";
 import type { Photo } from "@/shared/types";
+import { gridThumbUrl } from "../helpers/photos.helpers";
 import { PhotoLightbox } from "./PhotoLightbox";
 
-const SKELETON_RATIOS = ["3 / 4", "4 / 3", "1 / 1"] as const;
 const LONG_PRESS_MS = 500;
 const LONG_PRESS_MOVE_PX = 10;
 
@@ -20,14 +20,28 @@ function gridClassForCount(count: number) {
   return "pin-grid";
 }
 
+function VideoTile({ url, showPlay }: { url: string; showPlay: boolean }) {
+  const thumbUrl = gridThumbUrl(url);
+  return (
+    <>
+      {thumbUrl === url ? (
+        <video src={url} muted playsInline preload="metadata" />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={thumbUrl} alt="" loading="lazy" decoding="async" />
+      )}
+      {showPlay ? (
+        <span className="photo-play" aria-hidden="true">
+          <Play size={20} weight="fill" />
+        </span>
+      ) : null}
+    </>
+  );
+}
+
 function SkeletonPins({ count }: { count: number }) {
   return Array.from({ length: count }, (_, index) => (
-    <li
-      key={`pending-media-${index}`}
-      className="pin photo-skeleton"
-      style={{ aspectRatio: SKELETON_RATIOS[index % SKELETON_RATIOS.length] }}
-      aria-hidden="true"
-    />
+    <li key={`pending-media-${index}`} className="pin photo-skeleton" aria-hidden="true" />
   ));
 }
 
@@ -158,17 +172,10 @@ export function PhotoGrid({
                 }}
               >
                 {photo.mediaKind === MediaKind.VIDEO ? (
-                  <>
-                    <video src={photo.url} muted playsInline preload="metadata" />
-                    {!selecting ? (
-                      <span className="photo-play" aria-hidden="true">
-                        <Play size={20} weight="fill" />
-                      </span>
-                    ) : null}
-                  </>
+                  <VideoTile url={photo.url} showPlay={!selecting} />
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photo.url} alt="Event photo" />
+                  <img src={gridThumbUrl(photo.url)} alt="Event photo" loading="lazy" decoding="async" />
                 )}
                 {selecting ? (
                   <span className={`photo-check ${isSelected ? "photo-check-on" : ""}`} aria-hidden="true">

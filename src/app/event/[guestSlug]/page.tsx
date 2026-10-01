@@ -6,7 +6,7 @@ import { EventAlbumHero } from "@/features/events/components/EventAlbumHero";
 import { resolveEventBrandSurfaceStyle } from "@/features/events/helpers/event-theme.helpers";
 import { getEventByGuestSlug } from "@/features/events/services/events.service";
 import { PhotoAlbum } from "@/features/photos/components/PhotoAlbum";
-import { formatPhotoCount } from "@/features/photos/helpers/photos.helpers";
+import { formatMediaCount } from "@/features/photos/helpers/photos.helpers";
 import { listPhotos } from "@/features/photos/services/photos.service";
 
 type GuestAlbumPageProps = {
@@ -43,8 +43,9 @@ export default async function GuestAlbumPage({ params }: GuestAlbumPageProps) {
             <PhotoAlbum
               guestSlug={event.guestSlug}
               eventId={hostCanDelete ? event.id : undefined}
+              driveUrl={event.driveUrl}
               canDelete={hostCanDelete}
-              heading={formatPhotoCount(photos.length)}
+              heading={formatMediaCount(photos)}
               photos={photos}
             />
           </section>

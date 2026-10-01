@@ -2,11 +2,12 @@ import { CaretLeft } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getHost } from "@/features/auth/services/auth.service";
+import { EventDriveLinkForm } from "@/features/events/components/EventDriveLinkForm";
 import { EventLookPanel } from "@/features/events/components/EventLookPanel";
 import { EventQrCard } from "@/features/events/components/EventQrCard";
 import { getHostEvent } from "@/features/events/services/events.service";
 import { PhotoAlbum } from "@/features/photos/components/PhotoAlbum";
-import { formatPhotoCount } from "@/features/photos/helpers/photos.helpers";
+import { formatMediaCount } from "@/features/photos/helpers/photos.helpers";
 import { listPhotos } from "@/features/photos/services/photos.service";
 import { toDataUrl } from "@/features/qr/helpers/qr.helpers";
 
@@ -52,9 +53,16 @@ export default async function HostEventPage({
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[16rem_1fr]">
         <div className="flex flex-col gap-6 lg:sticky lg:top-28">
           <EventQrCard qrDataUrl={qrDataUrl} guestUrl={guestUrl} />
+          <EventDriveLinkForm eventId={event.id} driveUrl={event.driveUrl} />
         </div>
         <section className="flex min-w-0 flex-col gap-4">
-          <PhotoAlbum eventId={event.id} heading={formatPhotoCount(photos.length)} photos={photos} canDelete />
+          <PhotoAlbum
+            eventId={event.id}
+            driveUrl={event.driveUrl}
+            heading={formatMediaCount(photos)}
+            photos={photos}
+            canDelete
+          />
         </section>
       </div>
     </main>

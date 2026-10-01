@@ -18,6 +18,7 @@ export type Event = {
   guestSlug: string;
   createdAt: string;
   theme: EventTheme;
+  driveUrl?: string;
 };
 
 export type Photo = {

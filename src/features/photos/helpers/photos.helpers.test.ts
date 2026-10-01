@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { MediaKind } from "../../../shared/media-kind.ts";
 import {
+  formatMediaCount,
   getMediaKind,
   hasAllowedMediaMagic,
   isAllowedMediaFile,
   isImageKitUrl,
   rejectMediaReason,
+  gridThumbUrl,
   uploadBudgetError,
 } from "./photos.helpers.ts";
 
@@ -13,10 +16,10 @@ test("isAllowedMediaFile rejects svg and oversized files", () => {
   assert.equal(isAllowedMediaFile(new File([new Uint8Array([1])], "ok.jpg", { type: "image/jpeg" })), true);
   assert.equal(isAllowedMediaFile(new File([new Uint8Array([1])], "no.svg", { type: "image/svg+xml" })), false);
   const bigImage = new File([new Uint8Array([1])], "big.jpg", { type: "image/jpeg" });
-  Object.defineProperty(bigImage, "size", { value: 16 * 1024 * 1024 });
+  Object.defineProperty(bigImage, "size", { value: 101 * 1024 * 1024 });
   assert.equal(isAllowedMediaFile(bigImage), false);
   const bigVideo = new File([new Uint8Array([1])], "big.mp4", { type: "video/mp4" });
-  Object.defineProperty(bigVideo, "size", { value: 16 * 1024 * 1024 });
+  Object.defineProperty(bigVideo, "size", { value: 26 * 1024 * 1024 });
   assert.equal(isAllowedMediaFile(bigVideo), false);
   assert.equal(isAllowedMediaFile(new File([new Uint8Array([1])], "ok.mp4", { type: "video/mp4" })), true);
 });
@@ -24,12 +27,22 @@ test("isAllowedMediaFile rejects svg and oversized files", () => {
 test("rejectMediaReason returns size and type messages", () => {
   assert.equal(rejectMediaReason(new File([new Uint8Array([1])], "x.txt", { type: "text/plain" })), "Unsupported file type.");
   const bigImage = new File([new Uint8Array([1])], "big.jpg", { type: "image/jpeg" });
-  Object.defineProperty(bigImage, "size", { value: 16 * 1024 * 1024 });
-  assert.equal(rejectMediaReason(bigImage), "Image too large (max 15MB).");
+  Object.defineProperty(bigImage, "size", { value: 101 * 1024 * 1024 });
+  assert.equal(rejectMediaReason(bigImage), "Image too large (max 100MB).");
   const bigVideo = new File([new Uint8Array([1])], "big.mp4", { type: "video/mp4" });
-  Object.defineProperty(bigVideo, "size", { value: 16 * 1024 * 1024 });
-  assert.equal(rejectMediaReason(bigVideo), "Video too large (max 15MB).");
+  Object.defineProperty(bigVideo, "size", { value: 26 * 1024 * 1024 });
+  assert.equal(rejectMediaReason(bigVideo), "Video too large (max 25MB).");
   assert.equal(rejectMediaReason(new File([new Uint8Array([1])], "ok.jpg", { type: "image/jpeg" })), null);
+});
+
+test("formatMediaCount names photos and videos", () => {
+  assert.equal(formatMediaCount([]), "No media");
+  assert.equal(formatMediaCount([{ mediaKind: MediaKind.IMAGE }]), "1 photo");
+  assert.equal(formatMediaCount([{ mediaKind: MediaKind.VIDEO }, { mediaKind: MediaKind.VIDEO }]), "2 videos");
+  assert.equal(
+    formatMediaCount([{ mediaKind: MediaKind.IMAGE }, { mediaKind: MediaKind.IMAGE }, { mediaKind: MediaKind.VIDEO }]),
+    "2 photos, 1 video",
+  );
 });
 
 test("getMediaKind maps mime types", () => {
@@ -63,6 +76,25 @@ test("hasAllowedMediaMagic accepts jpeg png gif webp mp4 webm", async () => {
   assert.equal(await hasAllowedMediaMagic(webm), true);
   assert.equal(await hasAllowedMediaMagic(spoof), false);
   assert.equal(await hasAllowedMediaMagic(spoofVideo), false);
+});
+
+test("gridThumbUrl shrinks ImageKit files and leaves other hosts alone", () => {
+  assert.equal(
+    gridThumbUrl("https://ik.imagekit.io/demo/ladybug/a.jpg"),
+    "https://ik.imagekit.io/demo/ladybug/a.jpg?tr=w-400",
+  );
+  assert.equal(
+    gridThumbUrl("https://ik.imagekit.io/demo/ladybug/a.mp4"),
+    "https://ik.imagekit.io/demo/ladybug/a.mp4/ik-thumbnail.jpg?tr=w-400",
+  );
+  assert.equal(
+    gridThumbUrl("https://ik.imagekit.io/demo/ladybug/a.webm"),
+    "https://ik.imagekit.io/demo/ladybug/a.webm/ik-thumbnail.jpg?tr=w-400",
+  );
+  assert.equal(gridThumbUrl("https://cdn.example/a.jpg"), "https://cdn.example/a.jpg");
+  assert.equal(gridThumbUrl("https://notimagekit.io/a.jpg"), "https://notimagekit.io/a.jpg");
+  assert.equal(gridThumbUrl("https://imagekit.io.evil.com/a.jpg"), "https://imagekit.io.evil.com/a.jpg");
+  assert.equal(gridThumbUrl("not a url"), "not a url");
 });
 
 test("isImageKitUrl accepts only the configured endpoint", () => {

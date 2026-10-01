@@ -14,6 +14,41 @@ export function normalizeEventName(name: string) {
   return name.trim();
 }
 
+const DRIVE_HOSTS = new Set(["drive.google.com", "docs.google.com"]);
+
+export function normalizeDriveUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error("Drive link must be a Google Drive URL");
+  }
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    !DRIVE_HOSTS.has(parsed.hostname)
+  ) {
+    throw new Error("Drive link must be a Google Drive URL");
+  }
+  return parsed.toString();
+}
+
+export function readDriveUrl(raw: string | null | undefined): string | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  try {
+    return normalizeDriveUrl(raw) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const PUBLIC_EVENT_ERRORS = new Set([
   "Too many requests. Try again later.",
   "Event name must be 1–80 characters",
@@ -21,6 +56,7 @@ const PUBLIC_EVENT_ERRORS = new Set([
   "Color must be #RRGGBB",
   "Event not found",
   "Invalid host",
+  "Drive link must be a Google Drive URL",
 ]);
 
 export function publicEventError(caughtError: unknown, fallback: string) {
