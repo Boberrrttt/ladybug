@@ -116,24 +116,43 @@ export function uploadBudgetError(count: number, bytes: number, addBytes: number
 }
 
 const GRID_THUMB_WIDTH = 400;
+const IMAGEKIT_FILE_ID = /^[A-Za-z0-9_-]{1,128}$/;
 
-export function gridThumbUrl(url: string) {
+function imageKitHttpsUrl(url: string) {
   try {
     const parsed = new URL(url);
     const { hostname } = parsed;
     // Require the imagekit.io registrable host. endsWith("imagekit.io") also matches notimagekit.io.
     const imageKitHost = hostname === "imagekit.io" || hostname.endsWith(".imagekit.io");
-    if (parsed.protocol !== "https:" || !imageKitHost) {
-      return url;
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || !imageKitHost) {
+      return null;
     }
-    if (/\.(mp4|webm)$/i.test(parsed.pathname)) {
-      parsed.pathname = `${parsed.pathname}/ik-thumbnail.jpg`;
-    }
-    parsed.searchParams.set("tr", `w-${GRID_THUMB_WIDTH}`);
-    return parsed.toString();
+    return parsed;
   } catch {
-    return url;
+    return null;
   }
+}
+
+export function isImageKitFileId(fileId: string) {
+  return IMAGEKIT_FILE_ID.test(fileId);
+}
+
+export function imageKitMediaUrl(url: string) {
+  // REACT-URL-001: do not render a stored photo URL unless it is an https ImageKit URL.
+  const parsed = imageKitHttpsUrl(url);
+  return parsed ? parsed.toString() : "";
+}
+
+export function gridThumbUrl(url: string) {
+  const parsed = imageKitHttpsUrl(url);
+  if (!parsed) {
+    return "";
+  }
+  if (/\.(mp4|webm)$/i.test(parsed.pathname)) {
+    parsed.pathname = `${parsed.pathname}/ik-thumbnail.jpg`;
+  }
+  parsed.searchParams.set("tr", `w-${GRID_THUMB_WIDTH}`);
+  return parsed.toString();
 }
 
 export function isImageKitUrl(url: string, endpoint = process.env.IMAGEKIT_URL_ENDPOINT) {

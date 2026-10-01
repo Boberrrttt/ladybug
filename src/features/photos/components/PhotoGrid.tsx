@@ -4,7 +4,7 @@ import { Check, Images, Play } from "@phosphor-icons/react";
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { MediaKind } from "@/shared/media-kind";
 import type { Photo } from "@/shared/types";
-import { gridThumbUrl } from "../helpers/photos.helpers";
+import { gridThumbUrl, imageKitMediaUrl } from "../helpers/photos.helpers";
 import { PhotoLightbox } from "./PhotoLightbox";
 
 const LONG_PRESS_MS = 500;
@@ -22,6 +22,9 @@ function gridClassForCount(count: number) {
 
 function VideoTile({ url, showPlay }: { url: string; showPlay: boolean }) {
   const thumbUrl = gridThumbUrl(url);
+  if (!thumbUrl) {
+    return null;
+  }
   return (
     <>
       {thumbUrl === url ? (
@@ -173,10 +176,10 @@ export function PhotoGrid({
               >
                 {photo.mediaKind === MediaKind.VIDEO ? (
                   <VideoTile url={photo.url} showPlay={!selecting} />
-                ) : (
+                ) : imageKitMediaUrl(photo.url) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={gridThumbUrl(photo.url)} alt="Event photo" loading="lazy" decoding="async" />
-                )}
+                ) : null}
                 {selecting ? (
                   <span className={`photo-check ${isSelected ? "photo-check-on" : ""}`} aria-hidden="true">
                     {isSelected ? <Check size={14} weight="bold" /> : null}

@@ -26,3 +26,28 @@ export function clientIpFromHeaders(
   }
   return "unknown";
 }
+
+export function contentLengthExceeds(header: string | null, maxBytes: number) {
+  if (!header) {
+    return false;
+  }
+  const length = Number(header);
+  return Number.isFinite(length) && length > maxBytes;
+}
+
+export function resolveLoginUrl(env: { APP_ORIGIN?: string; NODE_ENV?: string } = process.env) {
+  const configured = env.APP_ORIGIN?.trim().replace(/\/$/, "");
+  const origin = configured || (env.NODE_ENV !== "production" ? "http://localhost:3004" : "");
+  if (!origin) {
+    return null;
+  }
+  try {
+    const parsed = new URL(origin);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return new URL("/login", parsed.origin);
+  } catch {
+    return null;
+  }
+}

@@ -93,3 +93,8 @@ export async function assertHostMutationRateLimit(hostId: string) {
 export async function assertEventCreateRateLimit(hostId: string) {
   await assertSharedRateLimit(`event-create:${hostId}`, 10, 15 * 60 * 1000);
 }
+
+export async function assertEarlyActionRateLimit(ip: string, limit: number) {
+  // NEXT-DOS-001: cap server-action posts before the action reads the body.
+  await assertSharedRateLimit(`action:early:${ip}`, limit, 60 * 1000);
+}

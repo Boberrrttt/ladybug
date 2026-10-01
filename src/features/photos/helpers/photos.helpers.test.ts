@@ -9,6 +9,8 @@ import {
   isImageKitUrl,
   rejectMediaReason,
   gridThumbUrl,
+  imageKitMediaUrl,
+  isImageKitFileId,
   uploadBudgetError,
 } from "./photos.helpers.ts";
 
@@ -78,7 +80,7 @@ test("hasAllowedMediaMagic accepts jpeg png gif webp mp4 webm", async () => {
   assert.equal(await hasAllowedMediaMagic(spoofVideo), false);
 });
 
-test("gridThumbUrl shrinks ImageKit files and leaves other hosts alone", () => {
+test("gridThumbUrl shrinks ImageKit files and drops other hosts", () => {
   assert.equal(
     gridThumbUrl("https://ik.imagekit.io/demo/ladybug/a.jpg"),
     "https://ik.imagekit.io/demo/ladybug/a.jpg?tr=w-400",
@@ -91,10 +93,15 @@ test("gridThumbUrl shrinks ImageKit files and leaves other hosts alone", () => {
     gridThumbUrl("https://ik.imagekit.io/demo/ladybug/a.webm"),
     "https://ik.imagekit.io/demo/ladybug/a.webm/ik-thumbnail.jpg?tr=w-400",
   );
-  assert.equal(gridThumbUrl("https://cdn.example/a.jpg"), "https://cdn.example/a.jpg");
-  assert.equal(gridThumbUrl("https://notimagekit.io/a.jpg"), "https://notimagekit.io/a.jpg");
-  assert.equal(gridThumbUrl("https://imagekit.io.evil.com/a.jpg"), "https://imagekit.io.evil.com/a.jpg");
-  assert.equal(gridThumbUrl("not a url"), "not a url");
+  assert.equal(gridThumbUrl("https://cdn.example/a.jpg"), "");
+  assert.equal(gridThumbUrl("https://notimagekit.io/a.jpg"), "");
+  assert.equal(gridThumbUrl("https://imagekit.io.evil.com/a.jpg"), "");
+  assert.equal(gridThumbUrl("not a url"), "");
+  assert.equal(imageKitMediaUrl("https://ik.imagekit.io/demo/a.jpg"), "https://ik.imagekit.io/demo/a.jpg");
+  assert.equal(imageKitMediaUrl("https://evil.example/a.jpg"), "");
+  assert.equal(isImageKitFileId("abc_DEF-123"), true);
+  assert.equal(isImageKitFileId("../other"), false);
+  assert.equal(isImageKitFileId(""), false);
 });
 
 test("isImageKitUrl accepts only the configured endpoint", () => {

@@ -4,7 +4,7 @@ import { ObjectId, type WithId } from "mongodb";
 import { deleteImageKitFile } from "@/server/imagekit";
 import { ensureIndexes, getCollection } from "@/server/db";
 import type { Event, EventTheme } from "@/shared/types";
-import { isImageKitUrl } from "@/features/photos/helpers/photos.helpers";
+import { isImageKitFileId, isImageKitUrl } from "@/features/photos/helpers/photos.helpers";
 import { normalizeEventTheme } from "../helpers/event-theme.helpers";
 import { createGuestSlug, isGuestSlug, normalizeEventName, readDriveUrl } from "../helpers/events.helpers";
 
@@ -147,7 +147,7 @@ export async function setEventBackground(
   if (!ObjectId.isValid(hostId) || !ObjectId.isValid(eventId)) {
     throw new Error("Event not found");
   }
-  if (!isImageKitUrl(background.url) || !background.fileId) {
+  if (!isImageKitUrl(background.url) || !isImageKitFileId(background.fileId)) {
     throw new Error("Invalid background image");
   }
   await ensureIndexes();

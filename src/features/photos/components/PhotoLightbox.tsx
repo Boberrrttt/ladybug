@@ -4,6 +4,7 @@ import { CaretLeft, CaretRight, X } from "@phosphor-icons/react";
 import { useEffect, useId, useRef } from "react";
 import { MediaKind } from "@/shared/media-kind";
 import type { Photo } from "@/shared/types";
+import { imageKitMediaUrl } from "../helpers/photos.helpers";
 
 type PhotoLightboxProps = {
   photos: Photo[];
@@ -19,6 +20,7 @@ export function PhotoLightbox({ photos, activeIndex, onClose, onNavigate }: Phot
   const onCloseRef = useRef(onClose);
   const onNavigateRef = useRef(onNavigate);
   const photo = photos[activeIndex];
+  const mediaUrl = photo ? imageKitMediaUrl(photo.url) : "";
   const hasMany = photos.length > 1;
 
   onCloseRef.current = onClose;
@@ -107,24 +109,24 @@ export function PhotoLightbox({ photos, activeIndex, onClose, onNavigate }: Phot
           <CaretLeft size={20} weight="bold" aria-hidden="true" />
         </button>
       ) : null}
-      {photo.mediaKind === MediaKind.VIDEO ? (
+      {mediaUrl && photo.mediaKind === MediaKind.VIDEO ? (
         <video
           ref={mediaRef}
-          src={photo.url}
+          src={mediaUrl}
           className="photo-lightbox-image"
           controls
           playsInline
           onClick={(event) => event.stopPropagation()}
         />
-      ) : (
+      ) : mediaUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={photo.url}
+          src={mediaUrl}
           alt="Event photo"
           className="photo-lightbox-image"
           onClick={(event) => event.stopPropagation()}
         />
-      )}
+      ) : null}
       {hasMany ? (
         <button
           type="button"

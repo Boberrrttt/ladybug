@@ -1,7 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getHost } from "@/features/auth/services/auth.service";
 import { EventAlbumHero } from "@/features/events/components/EventAlbumHero";
 import { resolveEventBrandSurfaceStyle } from "@/features/events/helpers/event-theme.helpers";
 import { getEventByGuestSlug } from "@/features/events/services/events.service";
@@ -27,8 +26,7 @@ export default async function GuestAlbumPage({ params }: GuestAlbumPageProps) {
   if (!event) {
     notFound();
   }
-  const [photos, host] = await Promise.all([listPhotos(event.id), getHost()]);
-  const hostCanDelete = host?.id === event.hostId;
+  const photos = await listPhotos(event.id);
   const brandStyle = resolveEventBrandSurfaceStyle(event.theme) as CSSProperties;
 
   return (
@@ -42,9 +40,7 @@ export default async function GuestAlbumPage({ params }: GuestAlbumPageProps) {
           <section className="event-album-well">
             <PhotoAlbum
               guestSlug={event.guestSlug}
-              eventId={hostCanDelete ? event.id : undefined}
               driveUrl={event.driveUrl}
-              canDelete={hostCanDelete}
               heading={formatMediaCount(photos)}
               photos={photos}
             />

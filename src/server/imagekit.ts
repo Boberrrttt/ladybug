@@ -1,6 +1,7 @@
 import "server-only";
 
 import { randomBytes } from "node:crypto";
+import { isImageKitFileId } from "@/features/photos/helpers/photos.helpers";
 
 const FILE_EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -40,7 +41,7 @@ export async function uploadImageKitFile(file: File) {
     fileId?: string;
     filePath?: string;
   };
-  if (!result.url || !result.fileId) {
+  if (!result.url || !result.fileId || !isImageKitFileId(result.fileId)) {
     throw new Error("ImageKit upload failed");
   }
   return {
@@ -51,7 +52,11 @@ export async function uploadImageKitFile(file: File) {
 }
 
 export async function deleteImageKitFile(fileId: string) {
-  const response = await fetch(`https://api.imagekit.io/v1/files/${fileId}`, {
+  // NEXT-SSRF-001: fileId is interpolated into the ImageKit URL with the private key.
+  if (!isImageKitFileId(fileId)) {
+    throw new Error("Invalid ImageKit file");
+  }
+  const response = await fetch(`https://api.imagekit.io/v1/files/${encodeURIComponent(fileId)}`, {
     method: "DELETE",
     headers: { Authorization: imageKitAuthHeader() },
   });

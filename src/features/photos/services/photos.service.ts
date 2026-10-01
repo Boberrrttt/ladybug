@@ -7,6 +7,7 @@ import { PhotoSource } from "@/shared/enums";
 import { MediaKind } from "@/shared/media-kind";
 import type { Photo } from "@/shared/types";
 import {
+  isImageKitFileId,
   isImageKitUrl,
   MAX_EVENT_UPLOAD_BYTES,
   MAX_PHOTOS_PER_EVENT,
@@ -67,7 +68,7 @@ export async function savePhoto(input: {
 }) {
   if (
     !ObjectId.isValid(input.eventId) ||
-    !input.fileId ||
+    !isImageKitFileId(input.fileId) ||
     !isImageKitUrl(input.url) ||
     !Number.isFinite(input.byteSize) ||
     input.byteSize <= 0
@@ -206,7 +207,8 @@ export async function listPhotos(eventId: string, options: { purgeExpiredDeletes
     .find({ eventId: eventObjectId, ...ACTIVE_PHOTO })
     .sort({ createdAt: -1 })
     .toArray();
-  return docs.map(serializePhoto);
+  // REACT-URL-001: drop stored URLs that are not this app's ImageKit endpoint.
+  return docs.flatMap((doc) => (isImageKitUrl(doc.url) ? [serializePhoto(doc)] : []));
 }
 
 async function assertEventPhoto(eventId: string, photoId: string) {
