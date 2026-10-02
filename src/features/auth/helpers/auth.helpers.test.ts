@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { hashPassword, isValidEmail, isValidPassword, normalizeEmail, verifyPassword } from "./auth.helpers.ts";
+import {
+  DUMMY_PASSWORD_HASH,
+  hashPassword,
+  isValidEmail,
+  isValidPassword,
+  normalizeEmail,
+  verifyPassword,
+} from "./auth.helpers.ts";
 
 test("normalizeEmail trims and lowercases", () => {
   assert.equal(normalizeEmail("  Host@Event.COM "), "host@event.com");
@@ -25,4 +32,8 @@ test("hashPassword then verifyPassword matches", async () => {
   const stored = await hashPassword("correct-horse");
   assert.equal(await verifyPassword("correct-horse", stored), true);
   assert.equal(await verifyPassword("wrong-horse", stored), false);
+});
+
+test("verifyPassword checks a stand-in hash instead of returning early", async () => {
+  assert.equal(await verifyPassword("correct-horse", DUMMY_PASSWORD_HASH), false);
 });

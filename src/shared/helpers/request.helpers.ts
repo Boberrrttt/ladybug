@@ -4,7 +4,6 @@ export function shouldTrustProxy(
   if (env.TRUST_PROXY === "false") {
     return false;
   }
-  // NEXT-PROXY-001: spoofed X-Forwarded-For skips login limits unless a proxy overwrites it.
   return env.TRUST_PROXY === "true" || env.VERCEL === "1";
 }
 
@@ -12,9 +11,9 @@ export function clientIpFromHeaders(
   forwardedFor: string | null,
   realIp: string | null,
   trustProxy = shouldTrustProxy(),
-) {
+): string | null {
   if (!trustProxy) {
-    return "unknown";
+    return null;
   }
   const platformIp = realIp?.trim();
   if (platformIp) {
@@ -24,15 +23,22 @@ export function clientIpFromHeaders(
   if (forwarded) {
     return forwarded;
   }
-  return "unknown";
+  return null;
+}
+
+export function contentLengthMissing(header: string | null) {
+  if (!header) {
+    return true;
+  }
+  const length = Number(header);
+  return !Number.isFinite(length) || length < 0;
 }
 
 export function contentLengthExceeds(header: string | null, maxBytes: number) {
-  if (!header) {
+  if (contentLengthMissing(header) || !header) {
     return false;
   }
-  const length = Number(header);
-  return Number.isFinite(length) && length > maxBytes;
+  return Number(header) > maxBytes;
 }
 
 export function resolveLoginUrl(env: { APP_ORIGIN?: string; NODE_ENV?: string } = process.env) {

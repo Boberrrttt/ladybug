@@ -52,7 +52,6 @@ export async function uploadImageKitFile(file: File) {
 }
 
 export async function deleteImageKitFile(fileId: string) {
-  // NEXT-SSRF-001: fileId is interpolated into the ImageKit URL with the private key.
   if (!isImageKitFileId(fileId)) {
     throw new Error("Invalid ImageKit file");
   }

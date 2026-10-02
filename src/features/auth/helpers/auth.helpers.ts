@@ -39,6 +39,8 @@ export function isValidPassword(password: string) {
   return password.length >= MIN_PASSWORD_LENGTH && password.length <= MAX_PASSWORD_LENGTH;
 }
 
+export const DUMMY_PASSWORD_HASH = `${"0".repeat(32)}:${"0".repeat(128)}`;
+
 export async function hashPassword(password: string) {
   const salt = randomBytes(16);
   const derived = await scryptAsync(password, salt, SCRYPT_KEYLEN);

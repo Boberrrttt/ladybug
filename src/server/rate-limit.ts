@@ -2,6 +2,7 @@ import "server-only";
 
 import { MongoServerError } from "mongodb";
 import { ensureIndexes, getCollection } from "@/server/db";
+import { normalizeEmail } from "@/features/auth/helpers/auth.helpers";
 import { clientIpFromHeaders } from "@/shared/helpers/request.helpers";
 import { assertRateLimit } from "./helpers/rate-limit.helpers";
 
@@ -70,14 +71,22 @@ async function clientIp() {
   return clientIpFromHeaders(headerStore.get("x-forwarded-for"), headerStore.get("x-real-ip"));
 }
 
-export async function assertAuthRateLimit(kind: "login" | "signup") {
+export async function assertAuthRateLimit(kind: "login" | "signup", email: string) {
+  const accountKey = normalizeEmail(email).slice(0, 254);
   const ip = await clientIp();
-  await assertSharedRateLimit(`${kind}:${ip}`, kind === "signup" ? 5 : 10, 15 * 60 * 1000);
+  const windowMs = 15 * 60 * 1000;
+  const limit = kind === "signup" ? 5 : 10;
+  if (ip) {
+    await assertSharedRateLimit(`${kind}:${ip}`, limit, windowMs);
+  }
+  await assertSharedRateLimit(`${kind}:account:${accountKey}`, limit, windowMs);
 }
 
 export async function assertGuestUploadRateLimit(guestSlug: string) {
   const ip = await clientIp();
-  await assertSharedRateLimit(`upload:guest:${guestSlug}:${ip}`, 20, 60 * 1000);
+  if (ip) {
+    await assertSharedRateLimit(`upload:guest:${guestSlug}:${ip}`, 20, 60 * 1000);
+  }
   await assertSharedRateLimit(`upload:guest-event:${guestSlug}`, 60, 60 * 1000);
   await assertSharedRateLimit(`upload:guest-event-hour:${guestSlug}`, 200, 60 * 60 * 1000);
 }
@@ -94,7 +103,9 @@ export async function assertEventCreateRateLimit(hostId: string) {
   await assertSharedRateLimit(`event-create:${hostId}`, 10, 15 * 60 * 1000);
 }
 
-export async function assertEarlyActionRateLimit(ip: string, limit: number) {
-  // NEXT-DOS-001: cap server-action posts before the action reads the body.
+export async function assertEarlyActionRateLimit(ip: string | null, limit: number) {
+  if (!ip) {
+    return;
+  }
   await assertSharedRateLimit(`action:early:${ip}`, limit, 60 * 1000);
 }

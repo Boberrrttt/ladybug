@@ -132,7 +132,6 @@ export async function reserveUploadBudget(eventId: string, byteSize: number) {
   await ensureIndexes();
   const id = new ObjectId(eventId);
   await ensureUploadBudget(id);
-  // NEXT-DOS-001: one conditional update so parallel uploads cannot all pass a prior count.
   const reserved = await uploadBudgets().findOneAndUpdate(
     {
       _id: id,
@@ -207,7 +206,6 @@ export async function listPhotos(eventId: string, options: { purgeExpiredDeletes
     .find({ eventId: eventObjectId, ...ACTIVE_PHOTO })
     .sort({ createdAt: -1 })
     .toArray();
-  // REACT-URL-001: drop stored URLs that are not this app's ImageKit endpoint.
   return docs.flatMap((doc) => (isImageKitUrl(doc.url) ? [serializePhoto(doc)] : []));
 }
 

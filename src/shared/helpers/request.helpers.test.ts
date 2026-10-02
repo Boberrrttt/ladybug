@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { clientIpFromHeaders, contentLengthExceeds, resolveLoginUrl, shouldTrustProxy } from "./request.helpers.ts";
+import {
+  clientIpFromHeaders,
+  contentLengthExceeds,
+  contentLengthMissing,
+  resolveLoginUrl,
+  shouldTrustProxy,
+} from "./request.helpers.ts";
 
 test("shouldTrustProxy trusts only an explicit proxy or Vercel", () => {
   assert.equal(shouldTrustProxy({ TRUST_PROXY: "true" }), true);
@@ -11,8 +17,16 @@ test("shouldTrustProxy trusts only an explicit proxy or Vercel", () => {
 });
 
 test("clientIpFromHeaders ignores forwarded headers when proxy is untrusted", () => {
-  assert.equal(clientIpFromHeaders("1.2.3.4, 5.6.7.8", "9.9.9.9", false), "unknown");
-  assert.equal(clientIpFromHeaders("1.2.3.4", null, false), "unknown");
+  assert.equal(clientIpFromHeaders("1.2.3.4, 5.6.7.8", "9.9.9.9", false), null);
+  assert.equal(clientIpFromHeaders("1.2.3.4", null, false), null);
+});
+
+test("contentLengthMissing rejects absent, junk, and negative lengths", () => {
+  assert.equal(contentLengthMissing(null), true);
+  assert.equal(contentLengthMissing("nope"), true);
+  assert.equal(contentLengthMissing("-1"), true);
+  assert.equal(contentLengthMissing("0"), false);
+  assert.equal(contentLengthMissing("100"), false);
 });
 
 test("contentLengthExceeds rejects only a numeric length over the cap", () => {
@@ -37,5 +51,5 @@ test("clientIpFromHeaders prefers platform IP then the first forwarded hop", () 
   assert.equal(clientIpFromHeaders("1.2.3.4, 5.6.7.8", "9.9.9.9", true), "9.9.9.9");
   assert.equal(clientIpFromHeaders("1.2.3.4, 5.6.7.8", null, true), "1.2.3.4");
   assert.equal(clientIpFromHeaders(null, "9.9.9.9", true), "9.9.9.9");
-  assert.equal(clientIpFromHeaders(null, null, true), "unknown");
+  assert.equal(clientIpFromHeaders(null, null, true), null);
 });

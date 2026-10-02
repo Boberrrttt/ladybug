@@ -6,6 +6,7 @@ import { readSession } from "@/server/session";
 import { verifySessionToken, type SessionPayload } from "@/server/session-token";
 import type { User } from "@/shared/types";
 import {
+  DUMMY_PASSWORD_HASH,
   hashPassword,
   isValidEmail,
   isValidPassword,
@@ -39,6 +40,7 @@ export async function signUp(email: string, password: string) {
   if (!isValidEmail(normalized) || !isValidPassword(password)) {
     throw new Error("Use a valid email and a password of 12–128 characters");
   }
+  const passwordHash = await hashPassword(password);
   await ensureIndexes();
   const existing = await users().findOne({ email: normalized });
   if (existing) {
@@ -47,7 +49,7 @@ export async function signUp(email: string, password: string) {
   const createdAt = new Date();
   const result = await users().insertOne({
     email: normalized,
-    passwordHash: await hashPassword(password),
+    passwordHash,
     createdAt,
     tokenVersion: 0,
   });
@@ -67,7 +69,9 @@ export async function logIn(email: string, password: string) {
   const normalized = normalizeEmail(email);
   await ensureIndexes();
   const doc = await users().findOne({ email: normalized });
-  if (!doc || !(await verifyPassword(password, doc.passwordHash))) {
+  const passwordHash = doc?.passwordHash ?? DUMMY_PASSWORD_HASH;
+  const matches = await verifyPassword(password, passwordHash);
+  if (!doc || !matches) {
     throw new Error("Invalid email or password");
   }
   return serializeUser(doc);

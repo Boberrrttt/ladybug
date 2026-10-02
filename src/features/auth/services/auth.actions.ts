@@ -7,8 +7,9 @@ import { getHost, incrementTokenVersion, logIn, signUp } from "./auth.service";
 
 export async function signUpAction(_previous: { error: string } | null, formData: FormData) {
   try {
-    await assertAuthRateLimit("signup");
-    const user = await signUp(String(formData.get("email") ?? ""), String(formData.get("password") ?? ""));
+    const email = String(formData.get("email") ?? "");
+    await assertAuthRateLimit("signup", email);
+    const user = await signUp(email, String(formData.get("password") ?? ""));
     await createSession(user.id, user.tokenVersion);
   } catch (caughtError) {
     const message = caughtError instanceof Error ? caughtError.message : "Could not create account";
@@ -22,8 +23,9 @@ export async function signUpAction(_previous: { error: string } | null, formData
 
 export async function logInAction(_previous: { error: string } | null, formData: FormData) {
   try {
-    await assertAuthRateLimit("login");
-    const user = await logIn(String(formData.get("email") ?? ""), String(formData.get("password") ?? ""));
+    const email = String(formData.get("email") ?? "");
+    await assertAuthRateLimit("login", email);
+    const user = await logIn(email, String(formData.get("password") ?? ""));
     await createSession(user.id, user.tokenVersion);
   } catch (caughtError) {
     const message = caughtError instanceof Error ? caughtError.message : "Log in failed";

@@ -61,7 +61,6 @@ const PUBLIC_EVENT_ERRORS = new Set([
 
 export function publicEventError(caughtError: unknown, fallback: string) {
   const message = caughtError instanceof Error ? caughtError.message : "";
-  // NEXT-ERROR-001: driver and network errors stay on the server.
   return PUBLIC_EVENT_ERRORS.has(message) ? message : fallback;
 }
 

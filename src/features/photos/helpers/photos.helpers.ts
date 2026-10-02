@@ -138,7 +138,6 @@ export function isImageKitFileId(fileId: string) {
 }
 
 export function imageKitMediaUrl(url: string) {
-  // REACT-URL-001: do not render a stored photo URL unless it is an https ImageKit URL.
   const parsed = imageKitHttpsUrl(url);
   return parsed ? parsed.toString() : "";
 }

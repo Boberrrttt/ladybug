@@ -7,6 +7,7 @@ import { SESSION_COOKIE } from "@/server/session-token";
 import {
   clientIpFromHeaders,
   contentLengthExceeds,
+  contentLengthMissing,
   resolveLoginUrl,
 } from "@/shared/helpers/request.helpers";
 
@@ -49,7 +50,6 @@ function contentSecurityPolicy(nonce: string) {
 
 function applySecurityHeaders(response: NextResponse, csp: string) {
   response.headers.set("Content-Security-Policy", csp);
-  // NEXT-CACHE-001: these responses include the signed-in host, so shared caches must not store them.
   response.headers.set("Cache-Control", "private, no-store");
   for (const [key, value] of Object.entries(BASE_SECURITY_HEADERS)) {
     response.headers.set(key, value);
@@ -57,7 +57,6 @@ function applySecurityHeaders(response: NextResponse, csp: string) {
 }
 
 function redirectToLogin() {
-  // NEXT-HOST-001: do not build the login URL from the request Host header.
   const loginUrl = resolveLoginUrl();
   if (!loginUrl) {
     return new NextResponse(null, { status: 307, headers: { Location: "/login" } });
@@ -72,13 +71,18 @@ export async function proxy(request: NextRequest) {
   const csp = contentSecurityPolicy(nonce);
 
   let response: NextResponse;
-  if (
-    request.method === "POST" &&
-    contentLengthExceeds(request.headers.get("content-length"), MAX_PHOTO_BYTES)
-  ) {
-    response = new NextResponse("Payload too large", { status: 413 });
-    applySecurityHeaders(response, csp);
-    return response;
+  if (request.method === "POST") {
+    const contentLength = request.headers.get("content-length");
+    if (contentLengthMissing(contentLength)) {
+      response = new NextResponse("Length required", { status: 411 });
+      applySecurityHeaders(response, csp);
+      return response;
+    }
+    if (contentLengthExceeds(contentLength, MAX_PHOTO_BYTES)) {
+      response = new NextResponse("Payload too large", { status: 413 });
+      applySecurityHeaders(response, csp);
+      return response;
+    }
   }
 
   if (request.method === "POST" && request.headers.has("next-action")) {
@@ -89,7 +93,6 @@ export async function proxy(request: NextRequest) {
       request.headers.get("x-real-ip"),
     );
     try {
-      // NEXT-DOS-001: anonymous posts stay at the guest cap; a real host session gets the host cap.
       await assertEarlyActionRateLimit(ip, host ? 60 : 20);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "";
