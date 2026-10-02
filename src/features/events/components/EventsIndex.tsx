@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarBlank, CaretRight, MagnifyingGlass, Plus } from "@phosphor-icons/react";
+import { CalendarBlank, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRef, useState, type MouseEvent } from "react";
 import { EventCreateForm } from "./EventCreateForm";
@@ -10,6 +10,9 @@ type EventListItem = {
   name: string;
   createdAt: string;
   createdLabel: string;
+  accent: string;
+  coverUrl?: string;
+  photoCount: number;
 };
 
 export function EventsIndex({ events }: { events: EventListItem[] }) {
@@ -64,12 +67,19 @@ export function EventsIndex({ events }: { events: EventListItem[] }) {
           {visibleEvents.map((event) => (
             <li key={event.id}>
               <Link href={`/events/${event.id}`} className="event-tile">
-                <span className="event-tile-name">{event.name}</span>
-                <span className="event-tile-meta">
-                  <time dateTime={event.createdAt}>{event.createdLabel}</time>
-                  <span className="event-tile-open">
-                    Open
-                    <CaretRight size={16} weight="bold" aria-hidden="true" />
+                <span
+                  className="event-tile-band"
+                  style={
+                    event.coverUrl
+                      ? { backgroundImage: `url(${JSON.stringify(event.coverUrl)})` }
+                      : { backgroundColor: event.accent }
+                  }
+                />
+                <span className="event-tile-body">
+                  <span className="event-tile-name">{event.name}</span>
+                  <span className="event-tile-meta">
+                    <time dateTime={event.createdAt}>{event.createdLabel}</time>
+                    <span>{event.photoCount === 1 ? "1 photo" : `${event.photoCount} photos`}</span>
                   </span>
                 </span>
               </Link>

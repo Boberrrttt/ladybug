@@ -108,6 +108,25 @@ export async function countPhotos(eventId: string) {
   return photos().countDocuments({ eventId: new ObjectId(eventId), ...ACTIVE_PHOTO });
 }
 
+export async function countPhotosByEvent(eventIds: string[]) {
+  const objectIds = eventIds.filter((eventId) => ObjectId.isValid(eventId)).map((eventId) => new ObjectId(eventId));
+  if (objectIds.length === 0) {
+    return new Map<string, number>();
+  }
+  await ensureIndexes();
+  const rows = await photos()
+    .aggregate<{ _id: ObjectId; count: number }>([
+      { $match: { eventId: { $in: objectIds }, ...ACTIVE_PHOTO } },
+      { $group: { _id: "$eventId", count: { $sum: 1 } } },
+    ])
+    .toArray();
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    counts.set(row._id.toString(), row.count);
+  }
+  return counts;
+}
+
 async function ensureUploadBudget(eventId: ObjectId) {
   const existing = await uploadBudgets().findOne({ _id: eventId });
   if (existing) {

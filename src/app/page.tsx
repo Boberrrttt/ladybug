@@ -9,11 +9,21 @@ const heroPins = [
   { src: "/pins/pin-outdoor.png", alt: "Outdoor gathering under pine trees" },
 ] as const;
 
+const steps = [
+  { title: "Create", body: "Name the event. Ladybug makes a guest album." },
+  { title: "Share", body: "Print the QR. Guests open it on their phone." },
+  { title: "Collect", body: "Every photo lands in one album." },
+] as const;
+
+const scatterPins = [
+  { src: "/pins/pin-crowd.png", alt: "Crowd at a small indoor show", className: "left-0 top-0 w-[62%] -rotate-3" },
+  { src: "/pins/pin-yard.png", alt: "Backyard party at dusk", className: "bottom-0 right-0 w-[58%] rotate-2" },
+] as const;
+
 const galleryPins = [
   { src: "/pins/pin-toast.png", alt: "Guests raising glasses", width: 768, height: 1024 },
-  { src: "/pins/pin-crowd.png", alt: "Crowd at a small indoor show", width: 768, height: 1024 },
-  { src: "/pins/pin-yard.png", alt: "Backyard party at dusk", width: 768, height: 1024 },
   { src: "/pins/pin-flowers.png", alt: "Floral arrangement at an entrance", width: 768, height: 1024 },
+  { src: "/pins/pin-outdoor.png", alt: "Outdoor gathering under pine trees", width: 768, height: 1024 },
 ] as const;
 
 export default async function HomePage() {
@@ -59,54 +69,75 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-[1280px] grid-cols-1 px-6 py-16 md:grid-cols-3 md:divide-x md:divide-hairline">
-        <div className="border-t border-hairline py-8 md:border-t-0 md:px-8 md:py-0 md:first:pl-0">
-          <h2 className="text-[22px] font-semibold text-ink">Create</h2>
-          <p className="mt-2 max-w-[65ch] text-base leading-[1.4] text-mute">
-            Name the event. Ladybug makes a guest album.
-          </p>
+      <section className="mx-auto grid w-full max-w-[1280px] grid-cols-1 items-center gap-10 px-6 py-16 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:gap-16 md:py-20">
+        <ol>
+          {steps.map((step) => (
+            <li key={step.title} className="border-t border-hairline py-6 first:border-t-0 first:pt-0 last:pb-0">
+              <h2 className="text-[22px] font-semibold text-ink">{step.title}</h2>
+              <p className="mt-2 max-w-[36ch] text-base leading-[1.4] text-mute">{step.body}</p>
+            </li>
+          ))}
+        </ol>
+        <div className="grid grid-cols-2 gap-2 md:hidden">
+          {scatterPins.map((pin) => (
+            <div key={pin.src} className="pin">
+              <Image src={pin.src} alt={pin.alt} width={768} height={1024} className="h-auto w-full" />
+            </div>
+          ))}
         </div>
-        <div className="border-t border-hairline py-8 md:border-t-0 md:px-8 md:py-0">
-          <h2 className="text-[22px] font-semibold text-ink">Share</h2>
-          <p className="mt-2 max-w-[65ch] text-base leading-[1.4] text-mute">
-            Print the QR. Guests open it on their phone.
-          </p>
-        </div>
-        <div className="border-t border-hairline py-8 md:border-t-0 md:px-8 md:py-0 md:last:pr-0">
-          <h2 className="text-[22px] font-semibold text-ink">Collect</h2>
-          <p className="mt-2 max-w-[65ch] text-base leading-[1.4] text-mute">
-            Every photo lands in one album.
-          </p>
+        <div className="relative hidden h-[26rem] md:block">
+          {scatterPins.map((pin) => (
+            <div key={pin.src} className={`pin absolute ${pin.className}`}>
+              <Image src={pin.src} alt={pin.alt} width={768} height={1024} className="h-auto w-full" />
+            </div>
+          ))}
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-[1280px] px-6 py-16">
-        <div className="pin-grid">
+      <section className="py-8 md:py-12">
+        <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-6 pb-2 [scrollbar-width:none] md:mx-auto md:grid md:w-full md:max-w-[1280px] md:grid-cols-3 md:overflow-visible md:px-6 md:pb-0 [&::-webkit-scrollbar]:hidden">
           {galleryPins.map((pin) => (
-            <div key={pin.src} className="pin">
+            <div key={pin.src} className="pin w-[min(78vw,32rem)] shrink-0 snap-start md:w-auto md:shrink">
               <Image src={pin.src} alt={pin.alt} width={pin.width} height={pin.height} className="h-auto w-full" />
             </div>
           ))}
         </div>
       </section>
 
-      <section className="bg-charcoal px-8 py-12 text-canvas">
-        <div className="mx-auto flex w-full max-w-[1280px] flex-col items-start gap-6">
-          <h2 className="heading-xl text-canvas">Make the album for your next room.</h2>
-          {host ? null : (
-            <Link href="/signup" className="btn-primary">
-              Sign up
-            </Link>
-          )}
+      <section className="bg-charcoal text-canvas">
+        <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 items-center gap-8 px-6 py-10 md:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] md:px-8 md:py-12">
+          <div className="flex flex-col items-start gap-6">
+            <h2 className="heading-xl max-w-[16ch] text-canvas">Make the album for your next room.</h2>
+            {host ? (
+              <Link href="/events" className="btn-primary">
+                Events
+              </Link>
+            ) : (
+              <Link href="/signup" className="btn-primary">
+                Sign up
+              </Link>
+            )}
+          </div>
+          <div className="pin relative h-52 w-full md:h-64">
+            <Image
+              src="/pins/pin-dance.png"
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(min-width: 768px) 22rem, 100vw"
+            />
+          </div>
         </div>
       </section>
 
-      <footer className="flex flex-wrap items-center justify-between gap-4 px-6 py-8">
+      <footer className="mx-auto flex w-full max-w-[1280px] flex-wrap items-center justify-between gap-4 px-6 py-8">
         <Link href="/" className="inline-flex items-center gap-2 text-[22px] font-semibold text-primary">
           <LadybugMark />
           Ladybug
         </Link>
-        {host ? null : (
+        {host ? (
+          <p className="text-sm font-semibold text-mute">QR photo albums for events</p>
+        ) : (
           <nav className="flex items-center gap-3">
             <Link href="/login" className="btn-tertiary">
               Log in
