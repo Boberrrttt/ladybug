@@ -60,10 +60,14 @@ export function EventLookPanel({
     return next;
   }, [backgroundUrl, page, presetId, primary]);
 
-  const previewStyle = useMemo(
-    () => resolveEventBrandSurfaceStyle(draftTheme) as CSSProperties,
-    [draftTheme],
-  );
+  const previewStyle = useMemo(() => {
+    const surfaceTheme: EventTheme = {
+      presetId: draftTheme.presetId,
+      page: draftTheme.page,
+      primary: draftTheme.primary,
+    };
+    return resolveEventBrandSurfaceStyle(surfaceTheme) as CSSProperties;
+  }, [draftTheme]);
 
   function applyPickedColor(nextPage: string, nextPrimary: string) {
     const match = findEventThemePresetByColors(nextPage, nextPrimary);
@@ -253,13 +257,17 @@ export function EventLookPanel({
               onClick={() => fileInputRef.current?.click()}
               style={
                 backgroundUrl
-                  ? { backgroundImage: `url(${JSON.stringify(backgroundUrl)})` }
+                  ? undefined
                   : { backgroundColor: page, color: onColorForBackground(page) }
               }
             >
-              <span className="event-look-drop-veil" aria-hidden="true" />
+              {backgroundUrl ? (
+                <img src={backgroundUrl} alt="" className="event-look-drop-art" />
+              ) : (
+                <span className="event-look-drop-veil" aria-hidden="true" />
+              )}
               <span className="event-look-drop-body">
-                <ImageIcon size={22} weight="duotone" aria-hidden="true" />
+                {backgroundUrl ? null : <ImageIcon size={22} weight="duotone" aria-hidden="true" />}
                 <span className="event-look-drop-title">
                   {backgroundPending
                     ? "Uploading…"
@@ -289,6 +297,7 @@ export function EventLookPanel({
               Guest preview
             </p>
             <div className="event-look-preview" style={previewStyle} aria-hidden="true">
+              {backgroundUrl ? <img src={backgroundUrl} alt="" className="event-look-preview-art" /> : null}
               <p className="event-look-preview-title">Sample album</p>
               <div className="event-look-preview-flourish">
                 <span />

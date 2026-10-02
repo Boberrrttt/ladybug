@@ -112,7 +112,7 @@ test("resolveEventBrandSurfaceStyle uses bare background image", () => {
     presetId: EventThemePreset.CLASSIC,
     backgroundUrl: "https://ik.imagekit.io/demo/bg.jpg",
   });
-  assert.equal(style.backgroundSize, "cover");
+  assert.equal(style.backgroundSize, "contain");
   assert.doesNotMatch(style.backgroundImage ?? "", /linear-gradient/);
   assert.match(style.backgroundImage ?? "", /ik\.imagekit\.io\/demo\/bg\.jpg/);
   assert.equal(style["--album-title"], "#000000");

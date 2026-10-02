@@ -27,7 +27,8 @@ export default async function GuestAlbumPage({ params }: GuestAlbumPageProps) {
     notFound();
   }
   const photos = await listPhotos(event.id);
-  const brandStyle = resolveEventBrandSurfaceStyle(event.theme) as CSSProperties;
+  const { backgroundUrl, ...themeWithoutArt } = event.theme;
+  const brandStyle = resolveEventBrandSurfaceStyle(themeWithoutArt) as CSSProperties;
 
   return (
     <div
@@ -36,6 +37,11 @@ export default async function GuestAlbumPage({ params }: GuestAlbumPageProps) {
     >
       <main className="w-full px-4 py-12 md:px-6">
         <div className="event-album-shell mx-auto flex w-full flex-col gap-10">
+          {backgroundUrl ? (
+            <figure className="event-album-art">
+              <img src={backgroundUrl} alt="" />
+            </figure>
+          ) : null}
           <EventAlbumHero name={event.name} />
           <section className="event-album-well">
             <PhotoAlbum

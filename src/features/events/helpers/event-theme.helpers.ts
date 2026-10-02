@@ -244,7 +244,7 @@ export function resolveEventBrandSurfaceStyle(
     ...cssVars,
     backgroundColor: tokens.page,
     backgroundImage: `url(${JSON.stringify(theme.backgroundUrl)})`,
-    backgroundSize: "cover",
+    backgroundSize: "contain",
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
     color: tokens.body,

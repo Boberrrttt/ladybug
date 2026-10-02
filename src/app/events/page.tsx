@@ -1,8 +1,6 @@
-import { CalendarBlank, CaretRight } from "@phosphor-icons/react/ssr";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getHost } from "@/features/auth/services/auth.service";
-import { EventCreateForm } from "@/features/events/components/EventCreateForm";
+import { EventsIndex } from "@/features/events/components/EventsIndex";
 import { formatEventDate } from "@/features/events/helpers/events.helpers";
 import { listEvents } from "@/features/events/services/events.service";
 
@@ -14,39 +12,13 @@ export default async function EventsPage() {
   const events = await listEvents(host.id);
 
   return (
-    <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 px-6 pb-16 pt-8">
-      <div>
-        <h1 className="heading-xl text-ink">Your events</h1>
-        {events.length > 0 ? (
-          <p className="mt-2 text-sm text-mute">
-            {events.length === 1 ? "1 event" : `${events.length} events`}
-          </p>
-        ) : null}
-      </div>
-      <EventCreateForm />
-      {events.length === 0 ? (
-        <div className="event-album-empty">
-          <CalendarBlank size={32} weight="duotone" aria-hidden="true" />
-          <p className="max-w-[65ch] text-base text-mute">No events yet. Name one above.</p>
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/events/${event.id}`}
-                className="flex items-center justify-between gap-4 rounded-md bg-card px-5 py-5 text-ink transition-colors duration-200 hover:bg-secondary"
-              >
-                <span className="text-lg font-semibold">{event.name}</span>
-                <span className="flex shrink-0 items-center gap-2 text-sm text-mute">
-                  {formatEventDate(event.createdAt)}
-                  <CaretRight size={16} weight="bold" aria-hidden="true" />
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+    <EventsIndex
+      events={events.map((event) => ({
+        id: event.id,
+        name: event.name,
+        createdAt: event.createdAt,
+        createdLabel: formatEventDate(event.createdAt),
+      }))}
+    />
   );
 }
