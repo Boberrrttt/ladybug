@@ -1,4 +1,4 @@
-import { MediaKind, type MediaKind as MediaKindValue } from "../../../shared/media-kind.ts";
+import type { MediaKind as MediaKindValue } from "@/shared/media-kind";
 
 export const MAX_PHOTO_BYTES = 100 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
@@ -89,7 +89,7 @@ export function formatMediaCount(items: { mediaKind: MediaKindValue }[]) {
   let images = 0;
   let videos = 0;
   for (const item of items) {
-    if (item.mediaKind === MediaKind.VIDEO) {
+    if (item.mediaKind === "VIDEO") {
       videos += 1;
     } else {
       images += 1;
