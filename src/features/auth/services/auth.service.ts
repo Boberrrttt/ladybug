@@ -38,7 +38,7 @@ function serializeUser(doc: WithId<UserDoc>): User {
 export async function signUp(email: string, password: string) {
   const normalized = normalizeEmail(email);
   if (!isValidEmail(normalized) || !isValidPassword(password)) {
-    throw new Error("Use a valid email and a password of 12–128 characters");
+    throw new Error("Use a valid email and a password of 12 to 128 characters");
   }
   const passwordHash = await hashPassword(password);
   await ensureIndexes();

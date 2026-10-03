@@ -2,31 +2,40 @@
 
 import { useActionState } from "react";
 import { signUpAction } from "../services/auth.actions";
+import { PasswordField } from "./PasswordField";
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState(signUpAction, null);
+  const errorId = state?.error ? "signup-error" : undefined;
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-2 text-sm font-medium text-ink">
+    <form action={formAction} className="auth-form">
+      <label className="auth-field">
         Email
-        <input name="email" type="email" required autoComplete="email" className="field" />
-      </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-ink">
-        Password
         <input
-          name="password"
-          type="password"
+          name="email"
+          type="email"
           required
-          minLength={12}
-          maxLength={128}
-          autoComplete="new-password"
+          autoComplete="email"
+          aria-invalid={Boolean(state?.error) || undefined}
+          aria-describedby={errorId}
           className="field"
         />
       </label>
-      {state?.error ? <p className="text-sm text-error">{state.error}</p> : null}
-      <button type="submit" disabled={pending} className="btn-primary">
-        {pending ? "Creating…" : "Sign up"}
+      <PasswordField
+        autoComplete="new-password"
+        minLength={12}
+        helper="Use 12 to 128 characters."
+        describedBy={errorId}
+        invalid={Boolean(state?.error)}
+      />
+      {state?.error ? (
+        <p id={errorId} className="auth-error" role="alert">
+          {state.error}
+        </p>
+      ) : null}
+      <button type="submit" disabled={pending} className="btn-primary auth-submit">
+        {pending ? "Creating..." : "Sign up"}
       </button>
     </form>
   );

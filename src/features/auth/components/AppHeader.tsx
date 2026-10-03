@@ -1,9 +1,9 @@
-import { SignIn } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { LadybugMark } from "@/shared/components/LadybugMark";
 import type { User } from "@/shared/types";
 import { AccountMenu } from "./AccountMenu";
 import { EventsNavLink } from "./EventsNavLink";
+import { GuestAuthLinks } from "./GuestAuthLinks";
 
 export function AppHeader({ host }: { host: User | null }) {
   return (
@@ -28,15 +28,7 @@ export function AppHeader({ host }: { host: User | null }) {
           {host ? (
             <AccountMenu email={host.email} />
           ) : (
-            <>
-              <Link href="/login" className="float-nav-link">
-                <SignIn size={18} weight="bold" aria-hidden="true" />
-                Log in
-              </Link>
-              <Link href="/signup" className="float-nav-cta">
-                Sign up
-              </Link>
-            </>
+            <GuestAuthLinks />
           )}
         </div>
       </nav>

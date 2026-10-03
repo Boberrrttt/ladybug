@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AuthScreen } from "@/features/auth/components/AuthScreen";
 import { SignupForm } from "@/features/auth/components/SignupForm";
 import { getHost } from "@/features/auth/services/auth.service";
 
@@ -9,15 +9,14 @@ export default async function SignupPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-[480px] flex-col gap-6 px-6 py-16">
-      <h1 className="heading-xl text-ink">Sign up</h1>
+    <AuthScreen
+      title="Sign up"
+      lede="Make a guest album for your next event."
+      switchPrompt="Already hosting?"
+      switchHref="/login"
+      switchLabel="Log in"
+    >
       <SignupForm />
-      <p className="text-base text-mute">
-        Already hosting?{" "}
-        <Link href="/login" className="font-semibold text-ink-soft">
-          Log in
-        </Link>
-      </p>
-    </main>
+    </AuthScreen>
   );
 }
