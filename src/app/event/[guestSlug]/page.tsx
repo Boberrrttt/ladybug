@@ -2,7 +2,10 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EventAlbumHero } from "@/features/events/components/EventAlbumHero";
-import { resolveEventBrandSurfaceStyle } from "@/features/events/helpers/event-theme.helpers";
+import {
+  resolveEventBrandSurfaceStyle,
+  resolveEventFontStyle,
+} from "@/features/events/helpers/event-theme.helpers";
 import { getEventByGuestSlug } from "@/features/events/services/events.service";
 import { PhotoAlbum } from "@/features/photos/components/PhotoAlbum";
 import { formatMediaCount } from "@/features/photos/helpers/photos.helpers";
@@ -42,7 +45,7 @@ export default async function GuestAlbumPage({ params }: GuestAlbumPageProps) {
               <img src={backgroundUrl} alt="" />
             </figure>
           ) : null}
-          <EventAlbumHero name={event.name} />
+          <EventAlbumHero name={event.name} fontStyle={resolveEventFontStyle(event.theme)} />
           <section className="event-album-well">
             <PhotoAlbum
               guestSlug={event.guestSlug}

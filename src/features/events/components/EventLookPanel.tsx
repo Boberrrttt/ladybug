@@ -8,14 +8,18 @@ import {
   Image as ImageIcon,
   Palette,
   Sparkle,
+  TextAa,
 } from "@phosphor-icons/react";
 import type { EventTheme } from "@/shared/types";
 import {
+  EVENT_FONT_STYLES,
   EVENT_THEME_PRESETS,
+  EventFontStyle,
   EventThemePreset,
   findEventThemePresetByColors,
   onColorForBackground,
   resolveEventBrandSurfaceStyle,
+  resolveEventFontStyle,
   resolveEventThemeTokens,
 } from "../helpers/event-theme.helpers";
 import {
@@ -34,6 +38,7 @@ export function EventLookPanel({
   const panelId = useId();
   const [open, setOpen] = useState(false);
   const [presetId, setPresetId] = useState(theme.presetId);
+  const [fontStyle, setFontStyle] = useState(() => resolveEventFontStyle(theme));
   const [page, setPage] = useState(() => resolveEventThemeTokens(theme).page);
   const [primary, setPrimary] = useState(() => resolveEventThemeTokens(theme).primary);
   const [backgroundUrl, setBackgroundUrl] = useState(theme.backgroundUrl);
@@ -54,17 +59,21 @@ export function EventLookPanel({
     if (primary.toLowerCase() !== base.primary) {
       next.primary = primary;
     }
+    if (fontStyle !== EventFontStyle.SANS) {
+      next.fontStyle = fontStyle;
+    }
     if (backgroundUrl) {
       next.backgroundUrl = backgroundUrl;
     }
     return next;
-  }, [backgroundUrl, page, presetId, primary]);
+  }, [backgroundUrl, fontStyle, page, presetId, primary]);
 
   const previewStyle = useMemo(() => {
     const surfaceTheme: EventTheme = {
       presetId: draftTheme.presetId,
       page: draftTheme.page,
       primary: draftTheme.primary,
+      fontStyle: draftTheme.fontStyle,
     };
     return resolveEventBrandSurfaceStyle(surfaceTheme) as CSSProperties;
   }, [draftTheme]);
@@ -142,7 +151,7 @@ export function EventLookPanel({
           </span>
           <span className="event-look-toggle-copy">
             <span className="event-look-title">Look</span>
-            <span className="event-look-lede">Guest album colors and background.</span>
+            <span className="event-look-lede">Guest album colors, type, and background.</span>
           </span>
         </span>
         <span className="event-look-toggle-trailing">
@@ -176,6 +185,33 @@ export function EventLookPanel({
       >
         <div className="event-look-grid">
           <div className="event-look-section">
+            <p className="event-look-section-label">
+              <TextAa size={14} weight="bold" aria-hidden="true" />
+              Type
+            </p>
+            <div className="event-look-fonts" role="listbox" aria-label="Font style">
+              {EVENT_FONT_STYLES.map((font) => {
+                const selected = font.id === fontStyle;
+                return (
+                  <button
+                    key={font.id}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => setFontStyle(font.id)}
+                    className={`event-look-preset${selected ? " is-selected" : ""}`}
+                  >
+                    <span
+                      className="event-look-font"
+                      data-font={font.id}
+                      style={{ fontFamily: font.stack }}
+                    >
+                      {font.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
             <p className="event-look-section-label">
               <Palette size={14} weight="bold" aria-hidden="true" />
               Palette
@@ -298,7 +334,9 @@ export function EventLookPanel({
             </p>
             <div className="event-look-preview" style={previewStyle} aria-hidden="true">
               {backgroundUrl ? <img src={backgroundUrl} alt="" className="event-look-preview-art" /> : null}
-              <p className="event-look-preview-title">Sample album</p>
+              <p className="event-look-preview-title" data-font={fontStyle}>
+                Sample album
+              </p>
               <div className="event-look-preview-flourish">
                 <span />
                 <Sparkle size={12} weight="fill" />
@@ -312,6 +350,7 @@ export function EventLookPanel({
         <form action={formAction} className="event-look-save">
           <input type="hidden" name="eventId" value={eventId} />
           <input type="hidden" name="presetId" value={presetId} />
+          <input type="hidden" name="fontStyle" value={fontStyle} />
           <input type="hidden" name="page" value={page} />
           <input type="hidden" name="primary" value={primary} />
           <button

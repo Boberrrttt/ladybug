@@ -1,4 +1,8 @@
-import type { EventTheme, EventThemePreset as EventThemePresetId } from "../../../shared/event-theme";
+import type {
+  EventFontStyle as EventFontStyleId,
+  EventTheme,
+  EventThemePreset as EventThemePresetId,
+} from "../../../shared/event-theme";
 
 export type { EventTheme };
 
@@ -13,6 +17,53 @@ export const EventThemePreset = {
 } as const satisfies Record<string, EventThemePresetId>;
 
 export type EventThemePreset = (typeof EventThemePreset)[keyof typeof EventThemePreset];
+
+export const EventFontStyle = {
+  SANS: "SANS",
+  ROUND: "ROUND",
+  NARROW: "NARROW",
+  SERIF: "SERIF",
+  CLASSIC: "CLASSIC",
+  DISPLAY: "DISPLAY",
+  SLAB: "SLAB",
+  ROMAN: "ROMAN",
+  SCRIPT: "SCRIPT",
+  HAND: "HAND",
+  BRUSH: "BRUSH",
+  MONO: "MONO",
+} as const satisfies Record<string, EventFontStyleId>;
+
+export type EventFontStyle = (typeof EventFontStyle)[keyof typeof EventFontStyle];
+
+const FONT_STACK: Record<EventFontStyle, string> = {
+  [EventFontStyle.SANS]: "var(--font-manrope), system-ui, sans-serif",
+  [EventFontStyle.ROUND]: "var(--font-round), system-ui, sans-serif",
+  [EventFontStyle.NARROW]: "var(--font-narrow), system-ui, sans-serif",
+  [EventFontStyle.SERIF]: "var(--font-newsreader), Georgia, serif",
+  [EventFontStyle.CLASSIC]: "var(--font-classic), Georgia, serif",
+  [EventFontStyle.DISPLAY]: "var(--font-display), Georgia, serif",
+  [EventFontStyle.SLAB]: "var(--font-slab), Rockwell, serif",
+  [EventFontStyle.ROMAN]: "var(--font-roman), Palatino, serif",
+  [EventFontStyle.SCRIPT]: "var(--font-script), cursive",
+  [EventFontStyle.HAND]: "var(--font-hand), cursive",
+  [EventFontStyle.BRUSH]: "var(--font-brush), cursive",
+  [EventFontStyle.MONO]: "var(--font-mono), ui-monospace, monospace",
+};
+
+export const EVENT_FONT_STYLES: { id: EventFontStyle; label: string; stack: string }[] = [
+  { id: EventFontStyle.SANS, label: "Sans", stack: FONT_STACK[EventFontStyle.SANS] },
+  { id: EventFontStyle.ROUND, label: "Round", stack: FONT_STACK[EventFontStyle.ROUND] },
+  { id: EventFontStyle.NARROW, label: "Narrow", stack: FONT_STACK[EventFontStyle.NARROW] },
+  { id: EventFontStyle.SERIF, label: "Serif", stack: FONT_STACK[EventFontStyle.SERIF] },
+  { id: EventFontStyle.CLASSIC, label: "Classic", stack: FONT_STACK[EventFontStyle.CLASSIC] },
+  { id: EventFontStyle.DISPLAY, label: "Display", stack: FONT_STACK[EventFontStyle.DISPLAY] },
+  { id: EventFontStyle.SLAB, label: "Slab", stack: FONT_STACK[EventFontStyle.SLAB] },
+  { id: EventFontStyle.ROMAN, label: "Roman", stack: FONT_STACK[EventFontStyle.ROMAN] },
+  { id: EventFontStyle.SCRIPT, label: "Script", stack: FONT_STACK[EventFontStyle.SCRIPT] },
+  { id: EventFontStyle.HAND, label: "Hand", stack: FONT_STACK[EventFontStyle.HAND] },
+  { id: EventFontStyle.BRUSH, label: "Brush", stack: FONT_STACK[EventFontStyle.BRUSH] },
+  { id: EventFontStyle.MONO, label: "Mono", stack: FONT_STACK[EventFontStyle.MONO] },
+];
 
 export type EventThemeTokens = {
   page: string;
@@ -163,6 +214,18 @@ export function isEventThemePreset(value: unknown): value is EventThemePreset {
   return typeof value === "string" && Object.values(EventThemePreset).includes(value as EventThemePreset);
 }
 
+export function isEventFontStyle(value: unknown): value is EventFontStyle {
+  return typeof value === "string" && Object.values(EventFontStyle).includes(value as EventFontStyle);
+}
+
+export function resolveEventFontStyle(theme: EventTheme = DEFAULT_EVENT_THEME): EventFontStyle {
+  return isEventFontStyle(theme.fontStyle) ? theme.fontStyle : EventFontStyle.SANS;
+}
+
+export function resolveEventFontStack(theme: EventTheme = DEFAULT_EVENT_THEME) {
+  return FONT_STACK[resolveEventFontStyle(theme)];
+}
+
 export function isHexColor(value: unknown): value is string {
   return typeof value === "string" && HEX.test(value);
 }
@@ -222,6 +285,9 @@ export function normalizeEventTheme(input: unknown): EventTheme {
   }
   if (typeof raw.backgroundUrl === "string" && raw.backgroundUrl.length > 0) {
     theme.backgroundUrl = raw.backgroundUrl;
+  }
+  if (isEventFontStyle(raw.fontStyle) && raw.fontStyle !== EventFontStyle.SANS) {
+    theme.fontStyle = raw.fontStyle;
   }
   return theme;
 }
@@ -286,6 +352,7 @@ export function resolveEventThemeCssVars(
     "--color-hairline": tokens.hairline,
     "--color-hairline-soft": tokens.hairlineSoft,
     "--color-charcoal": tokens.ink,
+    "--font-album": resolveEventFontStack(theme),
   };
 }
 
@@ -309,6 +376,10 @@ export function parseThemeFromForm(formData: FormData): EventTheme {
     if (primary !== base.primary) {
       theme.primary = primary;
     }
+  }
+  const fontRaw = String(formData.get("fontStyle") ?? "");
+  if (isEventFontStyle(fontRaw) && fontRaw !== EventFontStyle.SANS) {
+    theme.fontStyle = fontRaw;
   }
   return theme;
 }

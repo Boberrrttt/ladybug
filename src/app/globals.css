@@ -586,11 +586,33 @@ body {
 }
 
 .event-album-title {
+  font-family: var(--font-album, var(--font-manrope)), sans-serif;
   font-size: 40px;
   font-weight: 700;
   letter-spacing: -1.4px;
   line-height: 1.1;
   color: var(--album-title, var(--color-ink));
+}
+
+.event-album-title[data-font="SCRIPT"],
+.event-album-title[data-font="BRUSH"] {
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.event-album-title[data-font="HAND"],
+.event-album-title[data-font="CLASSIC"],
+.event-album-title[data-font="ROMAN"],
+.event-album-title[data-font="NARROW"],
+.event-album-title[data-font="MONO"] {
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.event-album-title[data-font="DISPLAY"] {
+  letter-spacing: -0.02em;
 }
 
 @media (min-width: 768px) {
@@ -1257,6 +1279,38 @@ body {
   color: var(--color-primary);
 }
 
+.event-look-fonts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (min-width: 900px) {
+  .event-look-fonts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.event-look-font {
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.event-look-font[data-font="SCRIPT"],
+.event-look-font[data-font="HAND"],
+.event-look-font[data-font="BRUSH"] {
+  font-size: 1.45rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.event-look-font[data-font="HAND"] {
+  font-weight: 500;
+}
+
 .event-look-presets {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1535,12 +1589,27 @@ body {
 }
 
 .event-look-preview-title {
+  font-family: var(--font-album, var(--font-manrope)), sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.35px;
   line-height: 1.15;
   color: var(--album-title, var(--color-ink));
   text-align: center;
+}
+
+.event-look-preview-title[data-font="SCRIPT"],
+.event-look-preview-title[data-font="BRUSH"] {
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.event-look-preview-title[data-font="HAND"],
+.event-look-preview-title[data-font="MONO"] {
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.2;
 }
 
 .event-look-preview-flourish {

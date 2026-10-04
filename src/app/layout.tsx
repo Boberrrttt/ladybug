@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
 import { headers } from "next/headers";
 import { AppHeader } from "@/features/auth/components/AppHeader";
 import { getHost } from "@/features/auth/services/auth.service";
+import { eventFontClassName } from "@/features/events/event-fonts";
 import "./globals.css";
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "Ladybug",
@@ -21,7 +15,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const nonce = headerStore.get("x-nonce") ?? undefined;
 
   return (
-    <html lang="en" className={`${manrope.variable} h-full antialiased`} nonce={nonce}>
+    <html lang="en" className={`${eventFontClassName} h-full antialiased`} nonce={nonce}>
       <body className="flex min-h-full flex-col font-sans">
         <AppHeader host={host} />
         <div id="main" className="flex flex-1 flex-col pt-20">

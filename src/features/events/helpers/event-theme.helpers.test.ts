@@ -9,8 +9,10 @@ import {
   normalizeHexColor,
   findEventThemePresetByColors,
   onColorForBackground,
+  EventFontStyle,
   parseThemeFromForm,
   resolveEventBrandSurfaceStyle,
+  resolveEventFontStack,
   resolveEventThemeCssVars,
   resolveEventThemeTokens,
 } from "./event-theme.helpers.ts";
@@ -121,6 +123,61 @@ test("resolveEventBrandSurfaceStyle uses bare background image", () => {
 test("findEventThemePresetByColors matches a preset from the color picker", () => {
   assert.equal(findEventThemePresetByColors("#F7F3EB", "#8A5A2B")?.label, "Sand");
   assert.equal(findEventThemePresetByColors("#111111", "#222222"), undefined);
+});
+
+test("normalizeEventTheme drops default and unknown font styles", () => {
+  assert.deepEqual(normalizeEventTheme({ presetId: EventThemePreset.CLASSIC, fontStyle: "SANS" }), {
+    presetId: EventThemePreset.CLASSIC,
+  });
+  assert.deepEqual(normalizeEventTheme({ presetId: EventThemePreset.CLASSIC, fontStyle: "COMIC" }), {
+    presetId: EventThemePreset.CLASSIC,
+  });
+});
+
+test("normalizeEventTheme keeps a non-default font style", () => {
+  assert.deepEqual(
+    normalizeEventTheme({ presetId: EventThemePreset.BLUSH, fontStyle: EventFontStyle.SCRIPT }),
+    { presetId: EventThemePreset.BLUSH, fontStyle: EventFontStyle.SCRIPT },
+  );
+});
+
+test("parseThemeFromForm reads font style and drops sans", () => {
+  const serif = new FormData();
+  serif.set("presetId", EventThemePreset.CLASSIC);
+  serif.set("fontStyle", EventFontStyle.SERIF);
+  assert.deepEqual(parseThemeFromForm(serif), {
+    presetId: EventThemePreset.CLASSIC,
+    fontStyle: EventFontStyle.SERIF,
+  });
+
+  const sans = new FormData();
+  sans.set("presetId", EventThemePreset.CLASSIC);
+  sans.set("fontStyle", EventFontStyle.SANS);
+  assert.deepEqual(parseThemeFromForm(sans), { presetId: EventThemePreset.CLASSIC });
+
+  const unknown = new FormData();
+  unknown.set("presetId", EventThemePreset.CLASSIC);
+  unknown.set("fontStyle", "NOPE");
+  assert.deepEqual(parseThemeFromForm(unknown), { presetId: EventThemePreset.CLASSIC });
+});
+
+test("resolveEventThemeCssVars sets album font stack", () => {
+  const serif = resolveEventThemeCssVars({
+    presetId: EventThemePreset.CLASSIC,
+    fontStyle: EventFontStyle.SERIF,
+  });
+  assert.equal(serif["--font-album"], resolveEventFontStack({
+    presetId: EventThemePreset.CLASSIC,
+    fontStyle: EventFontStyle.SERIF,
+  }));
+  assert.equal(serif["--font-album"], "var(--font-newsreader), Georgia, serif");
+  assert.equal(
+    resolveEventFontStack({ presetId: EventThemePreset.CLASSIC, fontStyle: EventFontStyle.BRUSH }),
+    "var(--font-brush), cursive",
+  );
+
+  const sans = resolveEventThemeCssVars(DEFAULT_EVENT_THEME);
+  assert.equal(sans["--font-album"], "var(--font-manrope), system-ui, sans-serif");
 });
 
 test("resolveEventBrandSurfaceStyle contrasts title with page color", () => {

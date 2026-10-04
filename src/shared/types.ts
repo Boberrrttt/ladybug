@@ -2,7 +2,7 @@ import type { EventTheme } from "./event-theme";
 import type { PhotoSource } from "./enums";
 import type { MediaKind } from "./media-kind";
 
-export type { EventTheme, EventThemePreset } from "./event-theme";
+export type { EventFontStyle, EventTheme, EventThemePreset } from "./event-theme";
 
 export type User = {
   id: string;
