@@ -2,6 +2,7 @@
 
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 import { useState } from "react";
+import { Input } from "@/shared/components/ui/input";
 
 type PasswordFieldProps = {
   autoComplete: "current-password" | "new-password";
@@ -26,7 +27,7 @@ export function PasswordField({
     <div className="auth-field">
       <label htmlFor="password">Password</label>
       <span className="auth-password">
-        <input
+        <Input
           id="password"
           name="password"
           type={visible ? "text" : "password"}
@@ -36,7 +37,6 @@ export function PasswordField({
           autoComplete={autoComplete}
           aria-invalid={invalid || undefined}
           aria-describedby={describedIds}
-          className="field"
         />
         <button
           type="button"

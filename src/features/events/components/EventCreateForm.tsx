@@ -2,43 +2,48 @@
 
 import { Images, Plus, X } from "@phosphor-icons/react";
 import { useActionState } from "react";
+import { Button } from "@/shared/components/ui/button";
+import { DialogDescription, DialogTitle } from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
 import { createEventAction } from "../services/events.actions";
 
-export function EventCreateForm() {
+export function EventCreateForm({ onClose }: { onClose: () => void }) {
   const [state, formAction, pending] = useActionState(createEventAction, null);
 
   return (
-    <>
-      <form id="close-new-event" method="dialog" hidden />
-      <form action={formAction} className="events-create">
-        <div className="events-create-lead">
-          <span className="events-create-icon" aria-hidden="true">
-            <Images size={20} weight="duotone" />
-          </span>
-          <div>
-            <h2 id="new-event-title" className="events-create-title">
-              New album
-            </h2>
-            <p className="events-create-lede">Guests see this on the album.</p>
-          </div>
-          <button type="submit" form="close-new-event" className="btn-tertiary events-dialog-close" aria-label="Close">
-            <X size={18} weight="bold" aria-hidden="true" />
-          </button>
+    <form action={formAction} className="events-create">
+      <div className="events-create-lead">
+        <span className="events-create-icon" aria-hidden="true">
+          <Images size={20} weight="duotone" />
+        </span>
+        <div>
+          <DialogTitle className="events-create-title">New album</DialogTitle>
+          <DialogDescription className="events-create-lede">Guests see this on the album.</DialogDescription>
         </div>
-        <label className="events-create-field">
-          Event name
-          <input name="name" type="text" required maxLength={80} autoComplete="off" className="field" />
-        </label>
-        {state?.error ? (
-          <p className="text-sm text-error" role="alert">
-            {state.error}
-          </p>
-        ) : null}
-        <button type="submit" disabled={pending} className="btn-primary events-create-submit gap-2">
-          <Plus size={16} weight="bold" aria-hidden="true" />
-          {pending ? "Creating…" : "Create event"}
-        </button>
-      </form>
-    </>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="events-dialog-close"
+          aria-label="Close"
+          onClick={onClose}
+        >
+          <X size={18} weight="bold" aria-hidden="true" />
+        </Button>
+      </div>
+      <label className="events-create-field">
+        Event name
+        <Input name="name" type="text" required maxLength={80} autoComplete="off" />
+      </label>
+      {state?.error ? (
+        <p className="text-sm text-error" role="alert">
+          {state.error}
+        </p>
+      ) : null}
+      <Button type="submit" disabled={pending} className="events-create-submit">
+        <Plus size={16} weight="bold" aria-hidden="true" />
+        {pending ? "Creating…" : "Create event"}
+      </Button>
+    </form>
   );
 }

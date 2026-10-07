@@ -2,6 +2,8 @@
 
 import { useActionState, useRef, useState } from "react";
 import { Check } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import { updateEventDriveUrlAction } from "../services/events.actions";
 
 export function EventDriveLinkForm({ eventId, driveUrl }: { eventId: string; driveUrl?: string }) {
@@ -20,14 +22,13 @@ export function EventDriveLinkForm({ eventId, driveUrl }: { eventId: string; dri
       <input type="hidden" name="eventId" value={eventId} />
       <label className="flex flex-col gap-2 text-sm font-medium text-ink">
         Large files
-        <input
+        <Input
           name="driveUrl"
           type="url"
           value={value}
           onChange={(changeEvent) => setValue(changeEvent.target.value)}
           placeholder="https://drive.google.com/..."
           autoComplete="off"
-          className="field"
         />
       </label>
       {showSaved ? (
@@ -36,9 +37,9 @@ export function EventDriveLinkForm({ eventId, driveUrl }: { eventId: string; dri
           Saved
         </p>
       ) : null}
-      <button type="submit" disabled={pending} className="btn-primary w-full">
+      <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Saving…" : "Save"}
-      </button>
+      </Button>
       {state && "error" in state ? (
         <p className="text-sm text-error" role="alert">
           {state.error}

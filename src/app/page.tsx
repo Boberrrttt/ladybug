@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getHost } from "@/features/auth/services/auth.service";
+import { Button } from "@/shared/components/ui/button";
 import { LadybugMark } from "@/shared/components/LadybugMark";
 
 const heroPins = [
@@ -39,12 +40,12 @@ export default async function HomePage() {
           </p>
           {host ? null : (
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/signup" className="btn-primary">
-                Sign up
-              </Link>
-              <Link href="/login" className="btn-secondary">
-                Log in
-              </Link>
+              <Button asChild>
+                <Link href="/signup">Sign up</Link>
+              </Button>
+              <Button asChild variant="secondary">
+                <Link href="/login">Log in</Link>
+              </Button>
             </div>
           )}
         </div>
@@ -109,13 +110,13 @@ export default async function HomePage() {
           <div className="flex flex-col items-start gap-6">
             <h2 className="heading-xl max-w-[16ch] text-canvas">Make the album for your next room.</h2>
             {host ? (
-              <Link href="/events" className="btn-primary">
-                Events
-              </Link>
+              <Button asChild>
+                <Link href="/events">Events</Link>
+              </Button>
             ) : (
-              <Link href="/signup" className="btn-primary">
-                Sign up
-              </Link>
+              <Button asChild>
+                <Link href="/signup">Sign up</Link>
+              </Button>
             )}
           </div>
           <div className="pin relative h-52 w-full md:h-64">
@@ -139,12 +140,12 @@ export default async function HomePage() {
           <p className="text-sm font-semibold text-mute">QR photo albums for events</p>
         ) : (
           <nav className="flex items-center gap-3">
-            <Link href="/login" className="btn-tertiary">
-              Log in
-            </Link>
-            <Link href="/signup" className="btn-primary">
-              Sign up
-            </Link>
+            <Button asChild variant="ghost">
+              <Link href="/login">Log in</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/signup">Sign up</Link>
+            </Button>
           </nav>
         )}
       </footer>

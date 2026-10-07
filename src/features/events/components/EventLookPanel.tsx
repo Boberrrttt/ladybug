@@ -11,6 +11,7 @@ import {
   Sparkle,
   TextAa,
 } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import type { EventTheme } from "@/shared/types";
 import {
   EVENT_FONT_STYLES,
@@ -369,13 +370,13 @@ export function EventLookPanel({
               Saved
             </p>
           ) : null}
-          <button
+          <Button
             type="submit"
-            className="btn-primary event-look-save-btn"
+            className="event-look-save-btn"
             disabled={pending || backgroundPending}
           >
             {pending ? "Saving…" : "Save"}
-          </button>
+          </Button>
           {state && "error" in state ? (
             <p className="text-sm text-error" role="alert">
               {state.error}

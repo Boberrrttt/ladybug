@@ -4,6 +4,7 @@ import { GoogleDriveLogo, Images, Plus } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "@/shared/components/ui/button";
 import { isAllowedMediaFile, rejectMediaReason } from "../helpers/photos.helpers";
 import { uploadPhotoAction } from "../services/photos.actions";
 
@@ -127,14 +128,16 @@ export function PhotoUploader({
             className="event-album-add-menu"
             onToggle={(event) => setMenuOpen(event.newState === "open")}
           >
-            <button type="button" className="btn-primary gap-2" onClick={openPicker} disabled={pending}>
+            <Button type="button" onClick={openPicker} disabled={pending}>
               <Plus size={16} weight="bold" aria-hidden="true" />
               {pending ? "Adding…" : "Add media"}
-            </button>
-            <a href={driveUrl} target="_blank" rel="noreferrer" className="btn-secondary gap-2">
-              <GoogleDriveLogo size={16} weight="bold" aria-hidden="true" />
-              Large files
-            </a>
+            </Button>
+            <Button asChild variant="secondary">
+              <a href={driveUrl} target="_blank" rel="noreferrer">
+                <GoogleDriveLogo size={16} weight="bold" aria-hidden="true" />
+                Large files
+              </a>
+            </Button>
             <p className="event-album-add-note">Images over 100MB and videos over 25MB use Large files.</p>
           </div>
         </>

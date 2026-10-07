@@ -2,6 +2,7 @@
 
 import { ArrowSquareOut, Check, Copy, DownloadSimple } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { Button } from "@/shared/components/ui/button";
 
 export function EventQrCard({
   qrDataUrl,
@@ -45,22 +46,26 @@ export function EventQrCard({
       <p className="text-base text-mute">Guests scan this to add photos.</p>
       <p className="break-all text-sm text-mute">{albumPath}</p>
       <div className="flex flex-col gap-2">
-        <button type="button" onClick={copyLink} className="btn-primary w-full gap-2">
+        <Button type="button" onClick={copyLink} className="w-full">
           {copied ? (
             <Check size={16} weight="bold" aria-hidden="true" />
           ) : (
             <Copy size={16} weight="bold" aria-hidden="true" />
           )}
           {copied ? "Copied" : "Copy link"}
-        </button>
-        <a href={guestUrl} target="_blank" rel="noreferrer" className="btn-secondary w-full gap-2">
-          <ArrowSquareOut size={16} weight="bold" aria-hidden="true" />
-          Open album
-        </a>
-        <a href={qrDataUrl} download="ladybug-qr.png" className="btn-secondary w-full gap-2">
-          <DownloadSimple size={16} weight="bold" aria-hidden="true" />
-          Download QR
-        </a>
+        </Button>
+        <Button asChild variant="secondary" className="w-full">
+          <a href={guestUrl} target="_blank" rel="noreferrer">
+            <ArrowSquareOut size={16} weight="bold" aria-hidden="true" />
+            Open album
+          </a>
+        </Button>
+        <Button asChild variant="secondary" className="w-full">
+          <a href={qrDataUrl} download="ladybug-qr.png">
+            <DownloadSimple size={16} weight="bold" aria-hidden="true" />
+            Download QR
+          </a>
+        </Button>
       </div>
     </section>
   );

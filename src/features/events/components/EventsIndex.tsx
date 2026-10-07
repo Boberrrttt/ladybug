@@ -2,7 +2,10 @@
 
 import { CalendarBlank, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useRef, useState, type MouseEvent } from "react";
+import { useState } from "react";
+import { Button } from "@/shared/components/ui/button";
+import { Dialog, DialogContent } from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
 import { EventCreateForm } from "./EventCreateForm";
 
 type EventListItem = {
@@ -17,20 +20,10 @@ type EventListItem = {
 
 export function EventsIndex({ events }: { events: EventListItem[] }) {
   const [query, setQuery] = useState("");
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const needle = query.trim().toLowerCase();
   const visibleEvents = needle ? events.filter((event) => event.name.toLowerCase().includes(needle)) : events;
   const eventCountLabel = events.length === 1 ? "1 event" : `${events.length} events`;
-
-  function openCreateDialog() {
-    dialogRef.current?.showModal();
-  }
-
-  function closeOnBackdrop(event: MouseEvent<HTMLDialogElement>) {
-    if (event.target === dialogRef.current) {
-      dialogRef.current.close();
-    }
-  }
 
   return (
     <main className="events-index">
@@ -42,18 +35,17 @@ export function EventsIndex({ events }: { events: EventListItem[] }) {
         <label className="events-search">
           <span className="sr-only">Search events</span>
           <MagnifyingGlass size={18} weight="bold" aria-hidden="true" />
-          <input
+          <Input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search events"
-            className="field"
           />
         </label>
-        <button type="button" className="btn-primary gap-2" onClick={openCreateDialog}>
+        <Button type="button" className="shrink-0" onClick={() => setCreateOpen(true)}>
           <Plus size={16} weight="bold" aria-hidden="true" />
           Add
-        </button>
+        </Button>
       </div>
       {visibleEvents.length === 0 ? (
         <div className="event-album-empty">
@@ -87,9 +79,11 @@ export function EventsIndex({ events }: { events: EventListItem[] }) {
           ))}
         </ul>
       )}
-      <dialog ref={dialogRef} className="events-dialog" aria-labelledby="new-event-title" onClick={closeOnBackdrop}>
-        <EventCreateForm />
-      </dialog>
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent showCloseButton={false}>
+          <EventCreateForm onClose={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

@@ -1,8 +1,19 @@
 "use client";
 
 import { CheckSquare } from "@phosphor-icons/react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/shared/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 import type { Photo } from "@/shared/types";
 import { deletePhotosAction, purgePhotosAction } from "../services/photos.actions";
 import { PhotoGrid, PhotoGridSkeleton } from "./PhotoGrid";
@@ -151,14 +162,14 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, driveUrl, he
             <button type="button" className="photo-select-side" onClick={toggleSelectAll} disabled={deleting}>
               {allSelected ? "Deselect all" : "Select all"}
             </button>
-            <button
+            <Button
               type="button"
-              className="btn-primary photo-select-delete"
+              className="photo-select-delete"
               disabled={deleting || selectedCount === 0}
               onClick={() => setConfirmOpen(true)}
             >
               {allSelected ? "Delete all" : "Delete"}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -170,10 +181,10 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, driveUrl, he
           onUploadingChange={handleUploadingChange}
           actions={
             canDelete && photos.length > 0 ? (
-              <button type="button" className="btn-secondary gap-2" onClick={() => setSelecting(true)}>
+              <Button type="button" variant="secondary" onClick={() => setSelecting(true)}>
                 <CheckSquare size={16} weight="bold" aria-hidden="true" />
                 Select
-              </button>
+              </Button>
             ) : null
           }
         />
@@ -196,87 +207,34 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, driveUrl, he
           onLongPressSelect={enterSelectWith}
         />
       )}
-      {confirmOpen ? (
-        <DeleteConfirmDialog
-          count={selectedCount}
-          pending={deleting}
-          onCancel={() => setConfirmOpen(false)}
-          onConfirm={confirmDelete}
-        />
-      ) : null}
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          if (!deleting) {
+            setConfirmOpen(open);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedCount === 1 ? "Delete 1 item?" : `Delete ${selectedCount} items?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>This can&apos;t be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={confirmDelete}>
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {undoIds ? (
         <div className="photo-undo" role="status" aria-live="polite">
           Deleted {undoIds.length} item{undoIds.length === 1 ? "" : "s"}.
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function DeleteConfirmDialog({
-  count,
-  pending,
-  onCancel,
-  onConfirm,
-}: {
-  count: number;
-  pending: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  const titleId = useId();
-  const cancelRef = useRef<HTMLButtonElement>(null);
-  const onCancelRef = useRef(onCancel);
-
-  onCancelRef.current = onCancel;
-
-  useEffect(() => {
-    cancelRef.current?.focus();
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !pending) {
-        onCancelRef.current();
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [pending]);
-
-  const label = count === 1 ? "Delete 1 item?" : `Delete ${count} items?`;
-
-  return (
-    <div
-      className="photo-confirm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      onClick={() => {
-        if (!pending) {
-          onCancel();
-        }
-      }}
-    >
-      <div className="photo-confirm-card" onClick={(event) => event.stopPropagation()}>
-        <h2 id={titleId} className="text-[22px] font-semibold text-ink">
-          {label}
-        </h2>
-        <p className="mt-2 text-sm text-mute">This can&apos;t be undone.</p>
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
-          <button ref={cancelRef} type="button" className="btn-secondary" onClick={onCancel} disabled={pending}>
-            Cancel
-          </button>
-          <button type="button" className="btn-primary" onClick={onConfirm} disabled={pending}>
-            {pending ? "Deleting…" : "Delete"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

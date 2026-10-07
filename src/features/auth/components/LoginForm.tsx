@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import { logInAction } from "../services/auth.actions";
 import { PasswordField } from "./PasswordField";
 
@@ -12,14 +14,13 @@ export function LoginForm() {
     <form action={formAction} className="auth-form">
       <label className="auth-field">
         Email
-        <input
+        <Input
           name="email"
           type="email"
           required
           autoComplete="email"
           aria-invalid={Boolean(state?.error) || undefined}
           aria-describedby={errorId}
-          className="field"
         />
       </label>
       <PasswordField autoComplete="current-password" describedBy={errorId} invalid={Boolean(state?.error)} />
@@ -28,9 +29,9 @@ export function LoginForm() {
           {state.error}
         </p>
       ) : null}
-      <button type="submit" disabled={pending} className="btn-primary auth-submit">
+      <Button type="submit" disabled={pending} className="auth-submit">
         {pending ? "Signing in..." : "Log in"}
-      </button>
+      </Button>
     </form>
   );
 }
