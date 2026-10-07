@@ -61,7 +61,7 @@ export async function updateEventThemeAction(
 }
 
 export async function updateEventDriveUrlAction(
-  _previous: { error: string } | null,
+  _previous: { error: string } | { saved: true } | null,
   formData: FormData,
 ) {
   const host = await getHost();
@@ -75,7 +75,7 @@ export async function updateEventDriveUrlAction(
     const event = await setEventDriveUrl(host.id, eventId, driveUrl);
     revalidatePath(`/events/${event.id}`);
     revalidatePath(`/event/${event.guestSlug}`);
-    return null;
+    return { saved: true as const };
   } catch (caughtError) {
     return { error: publicEventError(caughtError, "Could not save Drive link") };
   }

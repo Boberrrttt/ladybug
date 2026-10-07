@@ -44,6 +44,7 @@ export function EventLookPanel({
   const [primary, setPrimary] = useState(() => resolveEventThemeTokens(theme).primary);
   const [backgroundUrl, setBackgroundUrl] = useState(theme.backgroundUrl);
   const [backgroundError, setBackgroundError] = useState<string | null>(null);
+  const [backgroundSaved, setBackgroundSaved] = useState(false);
   const [state, formAction, pending] = useActionState(updateEventThemeAction, null);
   const draftStamp = `${presetId}|${fontStyle}|${page}|${primary}`;
   const stateRef = useRef(state);
@@ -111,6 +112,7 @@ export function EventLookPanel({
       return;
     }
     setBackgroundError(null);
+    setBackgroundSaved(false);
     const formData = new FormData();
     formData.set("eventId", eventId);
     formData.set("file", file);
@@ -118,6 +120,7 @@ export function EventLookPanel({
       try {
         const nextTheme = await uploadEventBackgroundAction(formData);
         setBackgroundUrl(nextTheme.backgroundUrl);
+        setBackgroundSaved(true);
       } catch (caughtError) {
         setBackgroundError(
           caughtError instanceof Error ? caughtError.message : "Could not upload background",
@@ -128,10 +131,12 @@ export function EventLookPanel({
 
   function removeBackground() {
     setBackgroundError(null);
+    setBackgroundSaved(false);
     startBackgroundTransition(async () => {
       try {
         await clearEventBackgroundAction(eventId);
         setBackgroundUrl(undefined);
+        setBackgroundSaved(true);
       } catch (caughtError) {
         setBackgroundError(
           caughtError instanceof Error ? caughtError.message : "Could not remove background",
@@ -325,6 +330,12 @@ export function EventLookPanel({
               </button>
             ) : null}
             {backgroundError ? <p className="text-sm text-error">{backgroundError}</p> : null}
+            {backgroundSaved && !backgroundPending && !backgroundError ? (
+              <p className="event-look-saved" role="status">
+                <Check size={16} weight="bold" aria-hidden="true" />
+                Saved
+              </p>
+            ) : null}
           </div>
 
           <div className="event-look-section event-look-section-preview">
