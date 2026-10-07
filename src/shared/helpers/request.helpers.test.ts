@@ -4,6 +4,7 @@ import {
   clientIpFromHeaders,
   contentLengthExceeds,
   contentLengthMissing,
+  resolveAppOrigin,
   resolveLoginUrl,
   shouldTrustProxy,
 } from "./request.helpers.ts";
@@ -34,6 +35,27 @@ test("contentLengthExceeds rejects only a numeric length over the cap", () => {
   assert.equal(contentLengthExceeds("100", 100), false);
   assert.equal(contentLengthExceeds("101", 100), true);
   assert.equal(contentLengthExceeds("nope", 100), false);
+});
+
+test("resolveAppOrigin uses the Vercel host when APP_ORIGIN is unset", () => {
+  assert.equal(resolveAppOrigin({ NODE_ENV: "production" }), "");
+  assert.equal(
+    resolveAppOrigin({ NODE_ENV: "production", VERCEL_PROJECT_PRODUCTION_URL: "ladybug-ivory.vercel.app" }),
+    "https://ladybug-ivory.vercel.app",
+  );
+  assert.equal(
+    resolveAppOrigin({ NODE_ENV: "production", VERCEL_URL: "ladybug-abc.vercel.app" }),
+    "https://ladybug-abc.vercel.app",
+  );
+  assert.equal(
+    resolveAppOrigin({
+      APP_ORIGIN: "https://album.example/",
+      NODE_ENV: "production",
+      VERCEL_URL: "nope.vercel.app",
+    }),
+    "https://album.example",
+  );
+  assert.equal(resolveAppOrigin({ NODE_ENV: "development" }), "http://localhost:3004");
 });
 
 test("resolveLoginUrl uses APP_ORIGIN and never a request host", () => {

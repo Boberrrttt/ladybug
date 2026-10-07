@@ -10,6 +10,7 @@ import { PhotoAlbum } from "@/features/photos/components/PhotoAlbum";
 import { formatMediaCount } from "@/features/photos/helpers/photos.helpers";
 import { listPhotos } from "@/features/photos/services/photos.service";
 import { toDataUrl } from "@/features/qr/helpers/qr.helpers";
+import { resolveAppOrigin } from "@/shared/helpers/request.helpers";
 
 export default async function HostEventPage({
   params,
@@ -26,9 +27,7 @@ export default async function HostEventPage({
     notFound();
   }
 
-  const origin =
-    process.env.APP_ORIGIN?.replace(/\/$/, "") ??
-    (process.env.NODE_ENV !== "production" ? "http://localhost:3004" : "");
+  const origin = resolveAppOrigin();
   if (!origin) {
     throw new Error("APP_ORIGIN is not set");
   }

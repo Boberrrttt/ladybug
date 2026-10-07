@@ -41,9 +41,37 @@ export function contentLengthExceeds(header: string | null, maxBytes: number) {
   return Number(header) > maxBytes;
 }
 
-export function resolveLoginUrl(env: { APP_ORIGIN?: string; NODE_ENV?: string } = process.env) {
+type AppOriginEnv = {
+  APP_ORIGIN?: string;
+  NODE_ENV?: string;
+  VERCEL_URL?: string;
+  VERCEL_PROJECT_PRODUCTION_URL?: string;
+};
+
+export function resolveAppOrigin(
+  env: AppOriginEnv = {
+    APP_ORIGIN: process.env.APP_ORIGIN,
+    NODE_ENV: process.env.NODE_ENV,
+    VERCEL_URL: process.env.VERCEL_URL,
+    VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  },
+) {
   const configured = env.APP_ORIGIN?.trim().replace(/\/$/, "");
-  const origin = configured || (env.NODE_ENV !== "production" ? "http://localhost:3004" : "");
+  if (configured) {
+    return configured;
+  }
+  if (env.NODE_ENV !== "production") {
+    return "http://localhost:3004";
+  }
+  const host = (env.VERCEL_PROJECT_PRODUCTION_URL || env.VERCEL_URL)?.trim().replace(/\/$/, "");
+  if (!host) {
+    return "";
+  }
+  return `https://${host.replace(/^https?:\/\//, "")}`;
+}
+
+export function resolveLoginUrl(env?: AppOriginEnv) {
+  const origin = resolveAppOrigin(env);
   if (!origin) {
     return null;
   }
