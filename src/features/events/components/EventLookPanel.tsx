@@ -5,6 +5,7 @@ import { useActionState, useId, useMemo, useRef, useState, useTransition } from 
 import {
   ArrowCounterClockwise,
   CaretDown,
+  Check,
   Image as ImageIcon,
   Palette,
   Sparkle,
@@ -44,6 +45,14 @@ export function EventLookPanel({
   const [backgroundUrl, setBackgroundUrl] = useState(theme.backgroundUrl);
   const [backgroundError, setBackgroundError] = useState<string | null>(null);
   const [state, formAction, pending] = useActionState(updateEventThemeAction, null);
+  const draftStamp = `${presetId}|${fontStyle}|${page}|${primary}`;
+  const stateRef = useRef(state);
+  const savedStampRef = useRef<string | null>(null);
+  if (stateRef.current !== state) {
+    stateRef.current = state;
+    savedStampRef.current = state && "saved" in state ? draftStamp : null;
+  }
+  const showSaved = savedStampRef.current === draftStamp && !pending;
   const [backgroundPending, startBackgroundTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,15 +77,10 @@ export function EventLookPanel({
     return next;
   }, [backgroundUrl, fontStyle, page, presetId, primary]);
 
-  const previewStyle = useMemo(() => {
-    const surfaceTheme: EventTheme = {
-      presetId: draftTheme.presetId,
-      page: draftTheme.page,
-      primary: draftTheme.primary,
-      fontStyle: draftTheme.fontStyle,
-    };
-    return resolveEventBrandSurfaceStyle(surfaceTheme) as CSSProperties;
-  }, [draftTheme]);
+  const previewStyle = useMemo(
+    () => resolveEventBrandSurfaceStyle(draftTheme) as CSSProperties,
+    [draftTheme],
+  );
 
   function applyPickedColor(nextPage: string, nextPrimary: string) {
     const match = findEventThemePresetByColors(nextPage, nextPrimary);
@@ -293,15 +297,11 @@ export function EventLookPanel({
               onClick={() => fileInputRef.current?.click()}
               style={
                 backgroundUrl
-                  ? undefined
+                  ? { backgroundImage: `url(${JSON.stringify(backgroundUrl)})` }
                   : { backgroundColor: page, color: onColorForBackground(page) }
               }
             >
-              {backgroundUrl ? (
-                <img src={backgroundUrl} alt="" className="event-look-drop-art" />
-              ) : (
-                <span className="event-look-drop-veil" aria-hidden="true" />
-              )}
+              <span className="event-look-drop-veil" aria-hidden="true" />
               <span className="event-look-drop-body">
                 {backgroundUrl ? null : <ImageIcon size={22} weight="duotone" aria-hidden="true" />}
                 <span className="event-look-drop-title">
@@ -333,7 +333,6 @@ export function EventLookPanel({
               Guest preview
             </p>
             <div className="event-look-preview" style={previewStyle} aria-hidden="true">
-              {backgroundUrl ? <img src={backgroundUrl} alt="" className="event-look-preview-art" /> : null}
               <p className="event-look-preview-title" data-font={fontStyle}>
                 Sample album
               </p>
@@ -353,6 +352,12 @@ export function EventLookPanel({
           <input type="hidden" name="fontStyle" value={fontStyle} />
           <input type="hidden" name="page" value={page} />
           <input type="hidden" name="primary" value={primary} />
+          {showSaved ? (
+            <p className="event-look-saved" role="status">
+              <Check size={16} weight="bold" aria-hidden="true" />
+              Saved
+            </p>
+          ) : null}
           <button
             type="submit"
             className="btn-primary event-look-save-btn"
@@ -360,7 +365,11 @@ export function EventLookPanel({
           >
             {pending ? "Saving…" : "Save"}
           </button>
-          {state?.error ? <p className="text-sm text-error">{state.error}</p> : null}
+          {state && "error" in state ? (
+            <p className="text-sm text-error" role="alert">
+              {state.error}
+            </p>
+          ) : null}
         </form>
       </div>
     </section>

@@ -40,7 +40,7 @@ export async function createEventAction(_previous: { error: string } | null, for
 }
 
 export async function updateEventThemeAction(
-  _previous: { error: string } | null,
+  _previous: { error: string } | { saved: true } | null,
   formData: FormData,
 ) {
   const host = await getHost();
@@ -54,7 +54,7 @@ export async function updateEventThemeAction(
     const event = await updateEventTheme(host.id, eventId, theme);
     revalidatePath(`/events/${event.id}`);
     revalidatePath(`/event/${event.guestSlug}`);
-    return null;
+    return { saved: true as const };
   } catch (caughtError) {
     return { error: publicEventError(caughtError, "Could not save look") };
   }
