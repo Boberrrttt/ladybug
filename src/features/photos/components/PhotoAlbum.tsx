@@ -1,7 +1,8 @@
 "use client";
 
-import { CheckSquare } from "@phosphor-icons/react";
+import { CaretDown, Check, CheckSquare, CircleNotch, Warning, WarningCircle, X } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -15,11 +16,98 @@ import {
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
 import type { Photo } from "@/shared/types";
+import { MediaKind } from "@/shared/media-kind";
 import { deletePhotosAction, purgePhotosAction } from "../services/photos.actions";
 import { PhotoGrid, PhotoGridSkeleton } from "./PhotoGrid";
-import { PhotoUploader, type UploadPhase } from "./PhotoUploader";
+import { PhotoUploader, UploadTileStatus, type PendingUpload, type UploadPhase } from "./PhotoUploader";
 
 const UNDO_MS = 5000;
+
+function uploadTrayTitle(items: PendingUpload[]) {
+  const failedCount = items.filter((item) => item.status === UploadTileStatus.FAILED).length;
+  const busy = items.some(
+    (item) => item.status === UploadTileStatus.UPLOADING || item.status === UploadTileStatus.QUEUED,
+  );
+  const countLabel = `${items.length} item${items.length === 1 ? "" : "s"}`;
+  if (busy) {
+    return failedCount > 0 ? `Uploading ${countLabel} (${failedCount} failed)` : `Uploading ${countLabel}`;
+  }
+  if (failedCount > 0) {
+    return `${failedCount} item${failedCount === 1 ? "" : "s"} failed`;
+  }
+  return `Added ${countLabel}`;
+}
+
+function uploadRowLabel(status: PendingUpload["status"]) {
+  if (status === UploadTileStatus.UPLOADING) {
+    return "Uploading";
+  }
+  if (status === UploadTileStatus.QUEUED) {
+    return "Waiting";
+  }
+  if (status === UploadTileStatus.FAILED) {
+    return "Failed";
+  }
+  return "Added";
+}
+
+function UploadTray({
+  items,
+  open,
+  onToggle,
+  onDismiss,
+}: {
+  items: PendingUpload[];
+  open: boolean;
+  onToggle: () => void;
+  onDismiss: (() => void) | null;
+}) {
+  return (
+    <section className="photo-upload-tray" aria-live="polite">
+      <div className="photo-upload-tray-head">
+        <p className="photo-upload-tray-title">{uploadTrayTitle(items)}</p>
+        <button type="button" className="photo-upload-tray-icon" onClick={onToggle} aria-expanded={open} aria-label={open ? "Hide upload list" : "Show upload list"}>
+          <CaretDown size={16} weight="bold" className={open ? "photo-upload-tray-caret-open" : undefined} aria-hidden="true" />
+        </button>
+        {onDismiss ? (
+          <button type="button" className="photo-upload-tray-icon" onClick={onDismiss} aria-label="Close upload list">
+            <X size={16} weight="bold" aria-hidden="true" />
+          </button>
+        ) : null}
+      </div>
+      <div className={open ? "photo-upload-tray-list photo-upload-tray-list-open" : "photo-upload-tray-list"}>
+        <ul>
+          {items.map((item, index) => (
+            <li key={item.id} className="photo-upload-tray-row" style={{ animationDelay: `${index * 40}ms` }}>
+              {item.mediaKind === MediaKind.VIDEO ? (
+                <video className="photo-upload-tray-thumb" src={item.previewUrl} muted playsInline preload="metadata" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="photo-upload-tray-thumb" src={item.previewUrl} alt="" />
+              )}
+              <span className="photo-upload-tray-copy">
+                <span className="photo-upload-tray-name">{item.name}</span>
+                <span className="photo-upload-tray-meta">{uploadRowLabel(item.status)}</span>
+              </span>
+              {item.status === UploadTileStatus.UPLOADING ? (
+                <CircleNotch size={18} weight="bold" className="photo-upload-spin photo-upload-tray-spin" aria-hidden="true" />
+              ) : null}
+              {item.status === UploadTileStatus.DONE ? (
+                <Check size={18} weight="bold" className="photo-upload-tray-check" aria-hidden="true" />
+              ) : null}
+              {item.status === UploadTileStatus.FAILED ? (
+                <span className="photo-upload-tray-marks" aria-hidden="true">
+                  <Warning size={18} weight="fill" />
+                  <WarningCircle size={18} weight="fill" />
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
 
 type PhotoAlbumProps = {
   photos: Photo[];
@@ -32,7 +120,11 @@ type PhotoAlbumProps = {
 
 export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, driveUrl, heading }: PhotoAlbumProps) {
   const router = useRouter();
-  const [addingCount, setAddingCount] = useState(0);
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
+  const [trayMounted, setTrayMounted] = useState(false);
+  const [trayOpen, setTrayOpen] = useState(true);
+  const previewUrlsRef = useRef<string[]>([]);
+  const pendingCountRef = useRef(0);
   const uploadPhaseRef = useRef<UploadPhase>("idle");
   const [gridBusy, setGridBusy] = useState(false);
   const [selecting, setSelecting] = useState(false);
@@ -49,12 +141,30 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, driveUrl, he
     setTrackedPhotoKey(photoKey);
     if (uploadPhaseRef.current === "settled") {
       uploadPhaseRef.current = "idle";
-      setAddingCount(0);
+      setPendingUploads((current) => current.filter((item) => item.status === UploadTileStatus.FAILED));
     }
   }
 
   useEffect(() => {
+    const previous = previewUrlsRef.current;
+    const next = pendingUploads.map((item) => item.previewUrl);
+    const nextUrls = new Set(next);
+    for (const previewUrl of previous) {
+      if (!nextUrls.has(previewUrl)) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    }
+    previewUrlsRef.current = next;
+    pendingCountRef.current = pendingUploads.length;
+  }, [pendingUploads]);
+
+  useEffect(() => {
+    setTrayMounted(true);
     return () => {
+      for (const previewUrl of previewUrlsRef.current) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      previewUrlsRef.current = [];
       if (purgeTimerRef.current) {
         clearTimeout(purgeTimerRef.current);
       }
@@ -65,9 +175,20 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, driveUrl, he
     setGridBusy(false);
   }, [photoKey]);
 
-  function handleUploadingChange(count: number, phase: UploadPhase = "active") {
+  function handleUploadingChange(items: PendingUpload[], phase: UploadPhase = "active") {
     uploadPhaseRef.current = phase;
-    setAddingCount(phase === "idle" ? 0 : count);
+    const next = phase === "idle" ? [] : items;
+    if (pendingCountRef.current === 0 && next.length > 0) {
+      setTrayOpen(true);
+    }
+    pendingCountRef.current = next.length;
+    setPendingUploads(next);
+  }
+
+  function dismissTray() {
+    uploadPhaseRef.current = "idle";
+    pendingCountRef.current = 0;
+    setPendingUploads([]);
   }
 
   function clearPurgeTimer() {
@@ -199,7 +320,7 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, driveUrl, he
       ) : (
         <PhotoGrid
           photos={photos}
-          pendingCount={addingCount}
+          pendingUploads={pendingUploads}
           canSelect={Boolean(canDelete)}
           selecting={selecting}
           selectedIds={selectedIds}
@@ -235,6 +356,24 @@ export function PhotoAlbum({ photos, canDelete, guestSlug, eventId, driveUrl, he
           Deleted {undoIds.length} item{undoIds.length === 1 ? "" : "s"}.
         </div>
       ) : null}
+      {trayMounted && pendingUploads.length > 0
+        ? createPortal(
+            <UploadTray
+              items={pendingUploads}
+              open={trayOpen}
+              onToggle={() => setTrayOpen((current) => !current)}
+              onDismiss={
+                pendingUploads.some(
+                  (item) =>
+                    item.status === UploadTileStatus.UPLOADING || item.status === UploadTileStatus.QUEUED,
+                )
+                  ? null
+                  : dismissTray
+              }
+            />,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

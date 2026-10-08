@@ -1,11 +1,12 @@
 "use client";
 
-import { Check, Images, Play } from "@phosphor-icons/react";
+import { Check, CircleNotch, Images, Play, Warning, WarningCircle } from "@phosphor-icons/react";
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { MediaKind } from "@/shared/media-kind";
 import type { Photo } from "@/shared/types";
 import { gridThumbUrl, imageKitMediaUrl } from "../helpers/photos.helpers";
 import { PhotoLightbox } from "./PhotoLightbox";
+import { UploadTileStatus, type PendingUpload } from "./PhotoUploader";
 
 const LONG_PRESS_MS = 500;
 const LONG_PRESS_MOVE_PX = 10;
@@ -42,6 +43,73 @@ function VideoTile({ url, showPlay }: { url: string; showPlay: boolean }) {
   );
 }
 
+function uploadLabel(item: PendingUpload) {
+  const kind = item.mediaKind === MediaKind.VIDEO ? "video" : "photo";
+  if (item.status === UploadTileStatus.UPLOADING) {
+    return `Uploading ${kind}`;
+  }
+  if (item.status === UploadTileStatus.QUEUED) {
+    return `Waiting to upload ${kind}`;
+  }
+  if (item.status === UploadTileStatus.FAILED) {
+    return `Failed ${kind}`;
+  }
+  return `Added ${kind}`;
+}
+
+function PendingTiles({ items }: { items: PendingUpload[] }) {
+  return items.map((item) => (
+    <li
+      key={item.id}
+      className="pin photo-upload-pin relative"
+      aria-busy={item.status === UploadTileStatus.UPLOADING || undefined}
+    >
+      <span className="sr-only">{uploadLabel(item)}</span>
+      {item.mediaKind === MediaKind.VIDEO ? (
+        <video src={item.previewUrl} muted playsInline preload="metadata" />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.previewUrl} alt="" />
+      )}
+      {item.status === UploadTileStatus.UPLOADING || item.status === UploadTileStatus.DONE ? (
+        <span
+          className={
+            item.status === UploadTileStatus.DONE
+              ? "photo-upload-veil photo-upload-veil-done"
+              : "photo-upload-veil"
+          }
+          aria-hidden="true"
+        >
+          <span
+            className={
+              item.status === UploadTileStatus.DONE
+                ? "photo-upload-badge photo-upload-badge-done"
+                : "photo-upload-badge"
+            }
+          >
+            {item.status === UploadTileStatus.DONE ? (
+              <Check size={28} weight="bold" />
+            ) : (
+              <CircleNotch size={36} weight="bold" className="photo-upload-spin" />
+            )}
+          </span>
+        </span>
+      ) : null}
+      {item.status === UploadTileStatus.QUEUED ? (
+        <span className="photo-upload-veil photo-upload-veil-queued" aria-hidden="true" />
+      ) : null}
+      {item.status === UploadTileStatus.FAILED ? (
+        <span className="photo-upload-veil" aria-hidden="true">
+          <span className="photo-upload-tray-marks">
+            <Warning size={22} weight="fill" />
+            <WarningCircle size={22} weight="fill" />
+          </span>
+        </span>
+      ) : null}
+    </li>
+  ));
+}
+
 function SkeletonPins({ count }: { count: number }) {
   return Array.from({ length: count }, (_, index) => (
     <li key={`pending-media-${index}`} className="pin photo-skeleton" aria-hidden="true" />
@@ -59,7 +127,7 @@ export function PhotoGridSkeleton({ count }: { count: number }) {
 
 export function PhotoGrid({
   photos,
-  pendingCount = 0,
+  pendingUploads = [],
   canSelect = false,
   selecting = false,
   selectedIds = [],
@@ -67,7 +135,7 @@ export function PhotoGrid({
   onLongPressSelect,
 }: {
   photos: Photo[];
-  pendingCount?: number;
+  pendingUploads?: PendingUpload[];
   canSelect?: boolean;
   selecting?: boolean;
   selectedIds?: string[];
@@ -113,7 +181,7 @@ export function PhotoGrid({
     }
   }
 
-  if (photos.length === 0 && pendingCount === 0) {
+  if (photos.length === 0 && pendingUploads.length === 0) {
     return (
       <div className="event-album-empty">
         <Images size={32} weight="duotone" aria-hidden="true" />
@@ -125,16 +193,18 @@ export function PhotoGrid({
     );
   }
 
-  const adding = pendingCount > 0;
+  const adding = pendingUploads.some(
+    (item) => item.status === UploadTileStatus.UPLOADING || item.status === UploadTileStatus.QUEUED,
+  );
 
   return (
     <>
       <ul
-        className={gridClassForCount(photos.length + pendingCount)}
+        className={gridClassForCount(photos.length + pendingUploads.length)}
         aria-busy={adding || undefined}
         aria-label={adding ? "Adding media" : undefined}
       >
-        {adding ? <SkeletonPins count={pendingCount} /> : null}
+        {pendingUploads.length > 0 ? <PendingTiles items={pendingUploads} /> : null}
         {photos.map((photo, index) => {
           const isSelected = selectedSet.has(photo.id);
           return (

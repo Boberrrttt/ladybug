@@ -5,17 +5,48 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/shared/components/ui/button";
-import { isAllowedMediaFile, rejectMediaReason } from "../helpers/photos.helpers";
+import type { MediaKind } from "@/shared/media-kind";
+import { getMediaKind, isAllowedMediaFile, rejectMediaReason } from "../helpers/photos.helpers";
 import { uploadPhotoAction } from "../services/photos.actions";
 
 export type UploadPhase = "active" | "settled" | "idle";
+
+export const UploadTileStatus = {
+  QUEUED: "QUEUED",
+  UPLOADING: "UPLOADING",
+  DONE: "DONE",
+  FAILED: "FAILED",
+} as const;
+
+export type UploadTileStatus = (typeof UploadTileStatus)[keyof typeof UploadTileStatus];
+
+export type PendingUpload = {
+  id: string;
+  name: string;
+  previewUrl: string;
+  mediaKind: MediaKind;
+  status: UploadTileStatus;
+};
+
+const UPLOAD_CLEAR_MS = 720;
+
+type QueuedFile = PendingUpload & { file: File };
+
+function waitForUploadClear() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, UPLOAD_CLEAR_MS);
+  });
+}
 
 type PhotoUploaderProps = {
   guestSlug?: string;
   eventId?: string;
   driveUrl?: string;
   heading?: string;
-  onUploadingChange?: (count: number, phase?: UploadPhase) => void;
+  onUploadingChange?: (items: PendingUpload[], phase?: UploadPhase) => void;
   actions?: ReactNode;
 };
 
@@ -59,13 +90,52 @@ export function PhotoUploader({
       return;
     }
 
+    const batch: QueuedFile[] = accepted.flatMap((file) => {
+      const mediaKind = getMediaKind(file);
+      if (!mediaKind) {
+        return [];
+      }
+      return [
+        {
+          id: crypto.randomUUID(),
+          name: file.name,
+          previewUrl: URL.createObjectURL(file),
+          mediaKind,
+          status: UploadTileStatus.QUEUED,
+          file,
+        },
+      ];
+    });
+    if (batch.length === 0) {
+      return;
+    }
+
     setPending(true);
-    onUploadingChange?.(accepted.length, "active");
+    let current = batch;
+    const publish = (items: QueuedFile[], phase: UploadPhase) => {
+      onUploadingChange?.(
+        items.map(({ id, name, previewUrl, mediaKind, status }) => ({
+          id,
+          name,
+          previewUrl,
+          mediaKind,
+          status,
+        })),
+        phase,
+      );
+    };
+    publish(current, "active");
     let uploaded = 0;
+    let currentId = "";
     try {
-      for (const file of accepted) {
+      for (const item of batch) {
+        currentId = item.id;
+        current = current.map((entry) =>
+          entry.id === item.id ? { ...entry, status: UploadTileStatus.UPLOADING } : entry,
+        );
+        publish(current, "active");
         const formData = new FormData();
-        formData.set("file", file);
+        formData.set("file", item.file);
         if (guestSlug) {
           formData.set("guestSlug", guestSlug);
         }
@@ -74,19 +144,28 @@ export function PhotoUploader({
         }
         await uploadPhotoAction(formData);
         uploaded += 1;
+        current = current.map((entry) =>
+          entry.id === item.id ? { ...entry, status: UploadTileStatus.DONE } : entry,
+        );
+        publish(current, "active");
       }
       setIsError(false);
       setStatus(`Added ${accepted.length} item${accepted.length === 1 ? "" : "s"}.`);
-      onUploadingChange?.(accepted.length, "settled");
+      publish(current, "settled");
+      await waitForUploadClear();
       router.refresh();
     } catch (caughtError) {
       setIsError(true);
       setStatus(caughtError instanceof Error ? caughtError.message : "Upload failed");
+      const settled = current
+        .map((entry) => (entry.id === currentId ? { ...entry, status: UploadTileStatus.FAILED } : entry))
+        .filter((entry) => entry.status !== UploadTileStatus.QUEUED);
       if (uploaded > 0) {
-        onUploadingChange?.(uploaded, "settled");
+        publish(settled, "settled");
+        await waitForUploadClear();
         router.refresh();
       } else {
-        onUploadingChange?.(0, "idle");
+        publish(settled, "active");
       }
     } finally {
       setPending(false);
