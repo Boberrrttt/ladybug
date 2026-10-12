@@ -142,7 +142,10 @@ export function PhotoUploader({
         if (eventId) {
           formData.set("eventId", eventId);
         }
-        await uploadPhotoAction(formData);
+        const uploadError = await uploadPhotoAction(formData);
+        if (uploadError) {
+          throw new Error(uploadError);
+        }
         uploaded += 1;
         current = current.map((entry) =>
           entry.id === item.id ? { ...entry, status: UploadTileStatus.DONE } : entry,
@@ -156,7 +159,8 @@ export function PhotoUploader({
       router.refresh();
     } catch (caughtError) {
       setIsError(true);
-      setStatus(caughtError instanceof Error ? caughtError.message : "Upload failed");
+      const message = caughtError instanceof Error ? caughtError.message : "";
+      setStatus(message.startsWith("Minified React error") || !message ? "Upload failed" : message);
       const settled = current
         .map((entry) => (entry.id === currentId ? { ...entry, status: UploadTileStatus.FAILED } : entry))
         .filter((entry) => entry.status !== UploadTileStatus.QUEUED);

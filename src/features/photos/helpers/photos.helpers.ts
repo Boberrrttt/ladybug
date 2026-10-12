@@ -2,8 +2,8 @@ import type { MediaKind as MediaKindValue } from "@/shared/media-kind";
 
 export const MAX_PHOTO_BYTES = 100 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
-export const MAX_PHOTOS_PER_EVENT = 500;
-export const MAX_EVENT_UPLOAD_BYTES = 500 * 1024 * 1024;
+export const MAX_PHOTOS_PER_EVENT = 1000;
+export const MAX_EVENT_UPLOAD_BYTES = 3 * 1024 * 1024 * 1024;
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/webm"]);
@@ -113,6 +113,24 @@ export function uploadBudgetError(count: number, bytes: number, addBytes: number
     return "Album storage limit reached";
   }
   return "Album is full";
+}
+
+const PUBLIC_UPLOAD_ERRORS = new Set([
+  "Unsupported file type.",
+  "Image too large (max 100MB).",
+  "Video too large (max 25MB).",
+  "Unauthorized",
+  "Event not found",
+  "Album is full",
+  "Album storage limit reached",
+  "ImageKit upload failed",
+  "Invalid photo",
+  "Too many requests. Try again later.",
+]);
+
+export function publicUploadError(caughtError: unknown) {
+  const message = caughtError instanceof Error ? caughtError.message : "";
+  return PUBLIC_UPLOAD_ERRORS.has(message) ? message : "Upload failed";
 }
 
 const GRID_THUMB_WIDTH = 400;

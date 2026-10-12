@@ -1,7 +1,7 @@
 "use client";
 
-import { CaretLeft, CaretRight, X } from "@phosphor-icons/react";
-import { useEffect, useId, useRef } from "react";
+import { CaretLeft, CaretRight, CircleNotch, X } from "@phosphor-icons/react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { MediaKind } from "@/shared/media-kind";
 import type { Photo } from "@/shared/types";
 import { imageKitMediaUrl } from "../helpers/photos.helpers";
@@ -16,15 +16,55 @@ type PhotoLightboxProps = {
 export function PhotoLightbox({ photos, activeIndex, onClose, onNavigate }: PhotoLightboxProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
-  const mediaRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const onCloseRef = useRef(onClose);
   const onNavigateRef = useRef(onNavigate);
   const photo = photos[activeIndex];
   const mediaUrl = photo ? imageKitMediaUrl(photo.url) : "";
+  const isVideo = photo?.mediaKind === MediaKind.VIDEO;
   const hasMany = photos.length > 1;
+  const [pendingUrl, setPendingUrl] = useState<string | null>(mediaUrl);
+  const pending = mediaUrl !== "" && pendingUrl === mediaUrl;
 
   onCloseRef.current = onClose;
   onNavigateRef.current = onNavigate;
+
+  useLayoutEffect(() => {
+    if (!mediaUrl) {
+      setPendingUrl(null);
+      return;
+    }
+    if (isVideo) {
+      const video = videoRef.current;
+      setPendingUrl(video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA ? null : mediaUrl);
+      return;
+    }
+    const image = imageRef.current;
+    setPendingUrl(image && image.complete && image.naturalWidth > 0 ? null : mediaUrl);
+  }, [isVideo, mediaUrl]);
+
+  useEffect(() => {
+    if (photos.length < 2) {
+      return;
+    }
+    const neighborIndexes = [
+      (activeIndex + 1) % photos.length,
+      (activeIndex - 1 + photos.length) % photos.length,
+    ];
+    for (const neighborIndex of neighborIndexes) {
+      const neighbor = photos[neighborIndex];
+      if (!neighbor || neighbor.mediaKind === MediaKind.VIDEO) {
+        continue;
+      }
+      const neighborUrl = imageKitMediaUrl(neighbor.url);
+      if (!neighborUrl) {
+        continue;
+      }
+      const preloaded = new Image();
+      preloaded.src = neighborUrl;
+    }
+  }, [activeIndex, photos]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -36,8 +76,9 @@ export function PhotoLightbox({ photos, activeIndex, onClose, onNavigate }: Phot
   }, []);
 
   useEffect(() => {
+    const video = videoRef.current;
     return () => {
-      mediaRef.current?.pause();
+      video?.pause();
     };
   }, [activeIndex]);
 
@@ -66,15 +107,21 @@ export function PhotoLightbox({ photos, activeIndex, onClose, onNavigate }: Phot
     return null;
   }
 
+  function clearPending() {
+    setPendingUrl((current) => (current === mediaUrl ? null : current));
+  }
+
   function navigate(nextIndex: number) {
-    mediaRef.current?.pause();
+    videoRef.current?.pause();
     onNavigate(nextIndex);
   }
 
   function close() {
-    mediaRef.current?.pause();
+    videoRef.current?.pause();
     onClose();
   }
+
+  const mediaClassName = pending ? "photo-lightbox-image is-pending" : "photo-lightbox-image";
 
   return (
     <div
@@ -109,24 +156,41 @@ export function PhotoLightbox({ photos, activeIndex, onClose, onNavigate }: Phot
           <CaretLeft size={20} weight="bold" aria-hidden="true" />
         </button>
       ) : null}
-      {mediaUrl && photo.mediaKind === MediaKind.VIDEO ? (
-        <video
-          ref={mediaRef}
-          src={mediaUrl}
-          className="photo-lightbox-image"
-          controls
-          playsInline
-          onClick={(event) => event.stopPropagation()}
-        />
-      ) : mediaUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={mediaUrl}
-          alt="Event photo"
-          className="photo-lightbox-image"
-          onClick={(event) => event.stopPropagation()}
-        />
-      ) : null}
+      <div className="photo-lightbox-stage" aria-busy={pending}>
+        {pending ? (
+          <CircleNotch
+            size={36}
+            weight="bold"
+            className="photo-upload-spin photo-lightbox-spinner"
+            aria-hidden="true"
+          />
+        ) : null}
+        {mediaUrl && isVideo ? (
+          <video
+            key={mediaUrl}
+            ref={videoRef}
+            src={mediaUrl}
+            className={mediaClassName}
+            controls
+            playsInline
+            onLoadedData={clearPending}
+            onError={clearPending}
+            onClick={(event) => event.stopPropagation()}
+          />
+        ) : mediaUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={mediaUrl}
+            ref={imageRef}
+            src={mediaUrl}
+            alt="Event photo"
+            className={mediaClassName}
+            onLoad={clearPending}
+            onError={clearPending}
+            onClick={(event) => event.stopPropagation()}
+          />
+        ) : null}
+      </div>
       {hasMany ? (
         <button
           type="button"

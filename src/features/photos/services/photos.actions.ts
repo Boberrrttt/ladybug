@@ -11,7 +11,7 @@ import {
 import { uploadImageKitFile } from "@/server/imagekit";
 import { PhotoSource } from "@/shared/enums";
 import { isGuestSlug } from "@/features/events/helpers/events.helpers";
-import { getMediaKind, hasAllowedMediaMagic, rejectMediaReason } from "../helpers/photos.helpers";
+import { getMediaKind, hasAllowedMediaMagic, publicUploadError, rejectMediaReason } from "../helpers/photos.helpers";
 import {
   purgePhotos,
   releaseUploadBudget,
@@ -21,62 +21,65 @@ import {
   softDeletePhotos,
 } from "./photos.service";
 
-export async function uploadPhotoAction(formData: FormData) {
-  const file = formData.get("file");
-  const guestSlug = formData.get("guestSlug");
-  const eventId = String(formData.get("eventId") ?? "");
-  if (!(file instanceof File)) {
-    throw new Error("Unsupported file type.");
-  }
-  const rejectReason = rejectMediaReason(file);
-  if (rejectReason) {
-    throw new Error(rejectReason);
-  }
-  if (!(await hasAllowedMediaMagic(file))) {
-    throw new Error("Unsupported file type.");
-  }
-  const mediaKind = getMediaKind(file);
-  if (!mediaKind) {
-    throw new Error("Unsupported file type.");
-  }
-
-  let event = null;
-  let source = PhotoSource.GUEST;
-  if (isGuestSlug(guestSlug)) {
-    await assertGuestUploadRateLimit(guestSlug);
-    event = await getEventByGuestSlug(guestSlug);
-  } else if (eventId) {
-    const host = await getHost();
-    if (!host) {
-      throw new Error("Unauthorized");
-    }
-    await assertHostUploadRateLimit(host.id);
-    event = await getHostEvent(host.id, eventId);
-    source = PhotoSource.HOST;
-  }
-  if (!event) {
-    throw new Error("Event not found");
-  }
-  await reserveUploadBudget(event.id, file.size);
-  let photo;
+export async function uploadPhotoAction(formData: FormData): Promise<string | null> {
   try {
-    const uploaded = await uploadImageKitFile(file);
-    photo = await savePhoto({
-      eventId: event.id,
-      url: uploaded.url,
-      fileId: uploaded.fileId,
-      filePath: uploaded.filePath,
-      source,
-      mediaKind,
-      byteSize: file.size,
-    });
+    const file = formData.get("file");
+    const guestSlug = formData.get("guestSlug");
+    const eventId = String(formData.get("eventId") ?? "");
+    if (!(file instanceof File)) {
+      throw new Error("Unsupported file type.");
+    }
+    const rejectReason = rejectMediaReason(file);
+    if (rejectReason) {
+      throw new Error(rejectReason);
+    }
+    if (!(await hasAllowedMediaMagic(file))) {
+      throw new Error("Unsupported file type.");
+    }
+    const mediaKind = getMediaKind(file);
+    if (!mediaKind) {
+      throw new Error("Unsupported file type.");
+    }
+
+    let event = null;
+    let source = PhotoSource.GUEST;
+    if (isGuestSlug(guestSlug)) {
+      await assertGuestUploadRateLimit(guestSlug);
+      event = await getEventByGuestSlug(guestSlug);
+    } else if (eventId) {
+      const host = await getHost();
+      if (!host) {
+        throw new Error("Unauthorized");
+      }
+      await assertHostUploadRateLimit(host.id);
+      event = await getHostEvent(host.id, eventId);
+      source = PhotoSource.HOST;
+    }
+    if (!event) {
+      throw new Error("Event not found");
+    }
+    await reserveUploadBudget(event.id, file.size);
+    try {
+      const uploaded = await uploadImageKitFile(file);
+      await savePhoto({
+        eventId: event.id,
+        url: uploaded.url,
+        fileId: uploaded.fileId,
+        filePath: uploaded.filePath,
+        source,
+        mediaKind,
+        byteSize: file.size,
+      });
+    } catch (caughtError) {
+      await releaseUploadBudget(event.id, file.size);
+      throw caughtError;
+    }
+    revalidatePath(`/event/${event.guestSlug}`);
+    revalidatePath(`/events/${event.id}`);
+    return null;
   } catch (caughtError) {
-    await releaseUploadBudget(event.id, file.size);
-    throw caughtError;
+    return publicUploadError(caughtError);
   }
-  revalidatePath(`/event/${event.guestSlug}`);
-  revalidatePath(`/events/${event.id}`);
-  return photo;
 }
 
 export async function deletePhotosAction(photoIds: string[], eventId?: string) {

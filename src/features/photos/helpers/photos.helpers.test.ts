@@ -11,6 +11,7 @@ import {
   gridThumbUrl,
   imageKitMediaUrl,
   isImageKitFileId,
+  publicUploadError,
   uploadBudgetError,
 } from "./photos.helpers.ts";
 
@@ -114,8 +115,14 @@ test("isImageKitUrl accepts only the configured endpoint", () => {
   assert.equal(isImageKitUrl("https://cdn.example.com/photo.jpg", "https://cdn.example.com"), true);
 });
 
+test("publicUploadError keeps written messages and hides the rest", () => {
+  assert.equal(publicUploadError(new Error("Album is full")), "Album is full");
+  assert.equal(publicUploadError(new Error("IMAGEKIT_PRIVATE_KEY is not set")), "Upload failed");
+  assert.equal(publicUploadError("nope"), "Upload failed");
+});
+
 test("uploadBudgetError names the cap that failed", () => {
-  assert.equal(uploadBudgetError(500, 0, 1), "Album is full");
-  assert.equal(uploadBudgetError(1, 500 * 1024 * 1024, 1), "Album storage limit reached");
+  assert.equal(uploadBudgetError(1000, 0, 1), "Album is full");
+  assert.equal(uploadBudgetError(1, 3 * 1024 * 1024 * 1024, 1), "Album storage limit reached");
   assert.equal(uploadBudgetError(1, 1, 1), "Album is full");
 });

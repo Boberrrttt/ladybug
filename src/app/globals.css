@@ -2261,21 +2261,40 @@ body:has(.event-brand) #main {
   position: fixed;
   inset: 0;
   z-index: 40;
-  display: grid;
-  place-items: center;
-  padding: 56px 16px 24px;
   background: rgb(38 38 34 / 0.88);
   animation: photo-lightbox-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.photo-lightbox-stage {
+  position: absolute;
+  inset: 56px 16px 24px;
+  display: grid;
+  place-items: center;
+}
+
 .photo-lightbox-image {
   max-width: min(100%, 1100px);
-  max-height: calc(100dvh - 96px);
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
   border-radius: 16px;
   box-shadow: 0 16px 48px rgb(38 38 34 / 0.35);
+}
+
+.photo-lightbox-image.is-pending {
+  opacity: 0;
+}
+
+.photo-lightbox-spinner {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  margin: auto;
+  color: var(--color-on-primary);
+  pointer-events: none;
 }
 
 .photo-lightbox-close {
@@ -2296,6 +2315,10 @@ body:has(.event-brand) #main {
   height: 40px;
   padding: 0;
   transform: translateY(-50%);
+}
+
+.photo-lightbox-nav:active {
+  transform: translateY(-50%) scale(0.98);
 }
 
 .photo-lightbox-prev {
@@ -2332,7 +2355,8 @@ body:has(.event-brand) #main {
     animation: none;
   }
 
-  .photo-lightbox-nav {
+  .photo-lightbox-nav,
+  .photo-lightbox-nav:active {
     transform: translateY(-50%);
   }
 }
